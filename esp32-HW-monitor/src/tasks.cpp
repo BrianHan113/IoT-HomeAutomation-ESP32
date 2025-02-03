@@ -343,6 +343,7 @@ void executeCommands(void *params)
         }
         else if (commandString.startsWith("WEATHERDELTA"))
         {
+            String delta = commandString.substring(12);
             Serial.println("Sending to desktop app");
             Serial0.println(commandString);
         }
@@ -641,6 +642,7 @@ void sendHardwareData(void *params)
 struct WeatherForecast
 {
     int id;
+    int delta;
     float temp;
     int prec_probability;
     float prec;
@@ -666,6 +668,7 @@ void sendWeatherData(void *params)
 
         WeatherForecast forecast = {
             doc["id"].as<int>(),
+            doc["delta"].as<int>(),
             doc["temp"].as<float>(),
             doc["prec_probability"].as<int>(),
             doc["prec"].as<float>(),
@@ -678,7 +681,18 @@ void sendWeatherData(void *params)
         int weatherImageID = weatherCodeToNextionPicID(forecast.weather_code, forecast.isDay);
         int weatherBarbID = windToNextionWindBarbID(forecast.wind_speed, forecast.wind_dir);
         int weatherRainID = rainToNextionRainID(forecast.prec, forecast.prec_probability);
+        String deltaLabel;
+        if (forecast.delta == 0)
+        {
+            deltaLabel = "Now";
+        }
+        else
+        {
+            deltaLabel = String(forecast.delta) + "h";
+        }
+
         sendNextionCommand("main.wPic" + String(forecast.id) + ".pic=" + String(weatherImageID));
+        sendNextionCommand("main.wTitle" + String(forecast.id) + ".txt=\"" + deltaLabel + "\"");
         sendNextionCommand("main.wTemp" + String(forecast.id) + ".txt=\"" + String((int)round(forecast.temp)) + "\"");
         sendNextionCommand("main.wRain" + String(forecast.id) + ".pic=" + String(weatherRainID));
         sendNextionCommand("main.wBarb" + String(forecast.id) + ".pic=" + String(weatherBarbID));

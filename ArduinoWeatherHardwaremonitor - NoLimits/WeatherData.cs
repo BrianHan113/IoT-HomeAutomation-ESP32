@@ -6,18 +6,10 @@ using System.Threading.Tasks;
 
 namespace SerialSender
 {
-    public struct WeatherData
-    {
-        public String location;
-        public ForeCast forecast1;
-        public ForeCast forecast2;
-        public ForeCast forecast3;
-        public ForeCast forecast4;
-    }
-
     public struct ForeCast
     {
         public int id;
+        public int delta;
         public float temp;
         public int prec_probability;
         public float prec;

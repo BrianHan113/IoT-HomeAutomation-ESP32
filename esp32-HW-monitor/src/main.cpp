@@ -34,17 +34,20 @@ void setup()
 
   delay(3000);
 
-  WiFi.mode(WIFI_AP_STA);
-  WiFi.begin(WIFI_SSID, WIFI_PASS);
+  WiFi.mode(WIFI_STA);
 
-  // Wait for WiFi connection
-  int tries = 0;
-  while (WiFi.status() != WL_CONNECTED && tries < 10)
-  {
-    delay(500);
-    Serial.println("Connecting to WiFi...");
-    tries++;
-  }
+  // Setup for camera capture functionality - see README
+  // WiFi.mode(WIFI_AP_STA);
+  // WiFi.begin(WIFI_SSID, WIFI_PASS);
+
+  // // Wait for WiFi connection
+  // int tries = 0;
+  // while (WiFi.status() != WL_CONNECTED && tries < 10)
+  // {
+  //   delay(500);
+  //   Serial.println("Connecting to WiFi...");
+  //   tries++;
+  // }
 
   if (esp_now_init() != ESP_OK)
   {
@@ -70,7 +73,8 @@ void setup()
   xTaskCreatePinnedToCore(receiveHardwareData, "Recieve Hardware Data from c# app", 2048, NULL, 2, NULL, PRO_CPU_NUM);
   xTaskCreatePinnedToCore(sendHardwareData, "Send Hardware Data to nextion", 2048, NULL, 1, NULL, APP_CPU_NUM);
   xTaskCreatePinnedToCore(sendWeatherData, "Send Weather Data to nextion", 2048, NULL, 1, NULL, APP_CPU_NUM);
-  xTaskCreatePinnedToCore(sendTideData, "Send Tide Data to nextion", 2048, NULL, 1, NULL, APP_CPU_NUM);
+  // Uncomment to enable tide data transfer - see README
+  // xTaskCreatePinnedToCore(sendTideData, "Send Tide Data to nextion", 2048, NULL, 1, NULL, APP_CPU_NUM);
   xTaskCreatePinnedToCore(receiveNextionSerial, "Receive data from nextion", 2048, NULL, 1, NULL, APP_CPU_NUM);
   xTaskCreatePinnedToCore(executeCommands, "Execute nextion commands", 8192, NULL, 1, NULL, APP_CPU_NUM);
   xTaskCreatePinnedToCore(sendTempData, "Send Hardware temperature data", 2048, NULL, 1, &sendTempDataHandle, APP_CPU_NUM);

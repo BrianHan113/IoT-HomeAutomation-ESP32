@@ -425,10 +425,12 @@ namespace SerialSender
                         DateTime sunriseTime = DateTime.Parse(myweather.daily.sunrise[currentDay]);
 
                         bool isDay = (currentTime >= sunriseTime) && (currentTime < sunsetTime);
+                        int currentDelta = deltaHours * (i-1); // how many hours past current forecast
 
                         currentForecast = new ForeCast
                         {
                             id = i,
+                            delta = currentDelta,
                             temp = myweather.hourly.temperature_2m[currentHour],
                             prec_probability = myweather.hourly.precipitation_probability[currentHour],
                             prec = myweather.hourly.precipitation[currentHour],

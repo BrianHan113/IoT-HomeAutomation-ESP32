@@ -1,6 +1,6 @@
 # IoT-HomeAutomation-ESP32
 
-IoT Home Automation system using ESP32s to control various peripherals. This project comes with pre-made examples of peripherals, but the esp32-Receiver-Firmware can be flashed and modified on any ESP32 for any custom functionality you want. 
+IoT Home Automation system using ESP32s to control various peripherals, developed with help and under supervision of . This project comes with pre-made examples of peripherals, but the esp32-Receiver-Firmware can be flashed and modified on any ESP32 for any custom functionality you want. 
 
 Summary of features:
 * Detection and pairing with powered ESPs that have the receiver firmware programmed
@@ -17,3 +17,10 @@ Summary of features:
 * CPU Temperature, GPU Temperature, Ram Usage and Power consumption shown on nextion display as waveforms
 * Music player
 * Lock PC button
+
+## Reasoning for Simplified version
+* Camera capture is very slow, around 10-15 seconds just for a single still image, and during this all buttons are unresponsive. It "works", but is generally pretty unusable, and hence has been disabled. It can easily be enabled by uncommenting code in the setup() function in the main file of HW-Monitor and filling in secret files in the HW-Monitor and CAM projects.
+* Tide data is also excluded in the simplified version, as the API used for the data (Stormglass.io) is unstable and could likely get rid of their free tier pricing. If stormglass is still free when reading this, or you have a paid api key, you can simply uncomment the task in the setup() function in the main file of HW-Monitor where the tasks are created, and provide your api key in the secret file in the ArduinoHardwareWeatherMonitor C# app.
+
+## Attributions
+* 
