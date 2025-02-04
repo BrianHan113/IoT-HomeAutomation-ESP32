@@ -30,6 +30,9 @@ void receiveHardwareData(void *params)
 
     while (true)
     {
+        // UBaseType_t stackLeft = uxTaskGetStackHighWaterMark(NULL);
+        // Serial.println("Stack rec HW Data: " + String(stackLeft));
+
         if (Serial0.available() > 0)
         {
             receivedData = Serial0.readStringUntil(0x03);
@@ -131,6 +134,7 @@ void receiveHardwareData(void *params)
 
 void receiveNextionSerial(void *params)
 {
+
     static char buffer[BUFFER_SIZE];
     static char miniBuffer[4]; // Store previous 4 characters to check for NUMS or NUME
     static int bufferIndex = 0;
@@ -140,6 +144,9 @@ void receiveNextionSerial(void *params)
 
     while (true)
     {
+        // UBaseType_t stackLeft = uxTaskGetStackHighWaterMark(NULL);
+        // Serial.println("Stack rec nextion serial: " + String(stackLeft));
+
         if (nextion.available())
         {
 
@@ -229,10 +236,14 @@ void receiveNextionSerial(void *params)
 
 void executeCommands(void *params)
 {
+
     char command[BUFFER_SIZE];
 
     while (true)
     {
+        // UBaseType_t stackLeft = uxTaskGetStackHighWaterMark(NULL);
+        // Serial.println("Stack executecmds: " + String(stackLeft));
+
         if (xQueueReceive(commandQueue, &command, portMAX_DELAY) != pdTRUE)
         {
             Serial.println("Nothing in queue");
@@ -552,6 +563,7 @@ void executeCommands(void *params)
 
 void sendHardwareData(void *params)
 {
+
     static JsonDocument cacheDoc;
     static JsonDocument doc;
     DeserializationError error;
@@ -567,6 +579,9 @@ void sendHardwareData(void *params)
 
     while (true)
     {
+        // UBaseType_t stackLeft = uxTaskGetStackHighWaterMark(NULL);
+        // Serial.println("Stack sendHWdata: " + String(stackLeft));
+
         if (xSemaphoreTake(hardwareDataMutex, portMAX_DELAY) == pdTRUE)
         {
             error = deserializeJson(doc, hardwareData);
@@ -654,17 +669,21 @@ struct WeatherForecast
 
 void sendWeatherData(void *params)
 {
+
     JsonDocument doc;
     DeserializationError error;
     String location;
 
     while (true)
     {
+        // UBaseType_t stackLeft = uxTaskGetStackHighWaterMark(NULL);
+        // Serial.println("send Weather data: " + String(stackLeft));
+
         if (xSemaphoreTake(weatherBinSemaphore, portMAX_DELAY) == pdTRUE)
         {
             error = deserializeJson(doc, weatherData);
         }
-        serializeJsonPretty(doc, Serial);
+        // serializeJsonPretty(doc, Serial);
 
         WeatherForecast forecast = {
             doc["id"].as<int>(),
@@ -703,6 +722,7 @@ void sendWeatherData(void *params)
 
 void sendTideData(void *params)
 {
+
     JsonDocument doc;
     DeserializationError error;
 
@@ -720,11 +740,14 @@ void sendTideData(void *params)
 
     while (true)
     {
+        // UBaseType_t stackLeft = uxTaskGetStackHighWaterMark(NULL);
+        // Serial.println("Stack sendTide: " + String(stackLeft));
+
         if (xSemaphoreTake(tideBinSemaphore, portMAX_DELAY) == pdTRUE)
         {
             error = deserializeJson(doc, tideData);
         }
-        serializeJsonPretty(doc, Serial);
+        // serializeJsonPretty(doc, Serial);
 
         high1Time = doc["High1"]["time"].as<const char *>();
         lowTime = doc["Low"]["time"].as<const char *>();
@@ -789,6 +812,7 @@ void sendTideData(void *params)
 
 void sendTempData(void *params)
 {
+
     JsonDocument cacheDoc;
     JsonDocument doc;
     DeserializationError error;
@@ -797,6 +821,9 @@ void sendTempData(void *params)
 
     while (true)
     {
+        // UBaseType_t stackLeft = uxTaskGetStackHighWaterMark(NULL);
+        // Serial.println("Stack sendTempdata: " + String(stackLeft));
+
         if (xSemaphoreTake(hardwareDataMutex, portMAX_DELAY) == pdTRUE)
         {
             error = deserializeJson(doc, hardwareData);
@@ -812,7 +839,7 @@ void sendTempData(void *params)
             doc.set(cacheDoc);
         }
 
-        serializeJsonPretty(doc, Serial); // Display whole data for debugging
+        // serializeJsonPretty(doc, Serial); // Display whole data for debugging
 
         gpuTemp = doc["GpuTemp"];
         String tempString = "GPUTEMP" + (String)(int)gpuTemp;

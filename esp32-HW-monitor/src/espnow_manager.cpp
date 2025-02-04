@@ -1,8 +1,7 @@
 #include "espnow_manager.h"
 extern QueueHandle_t commandQueue;
-
-esp_now_peer_info_t peerInfo;
 extern HardwareSerial nextion;
+
 void espNowAddReceiver(const uint8_t *receiver)
 {
     esp_now_peer_info_t peerInfo = {};

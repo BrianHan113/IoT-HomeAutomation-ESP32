@@ -49,18 +49,18 @@ void setup()
   //   tries++;
   // }
 
+  // if (!SPIFFS.begin(true))
+  // {
+  //   Serial.println("SPIFFS initialization failed!");
+  //   return;
+  // }
+
   if (esp_now_init() != ESP_OK)
   {
     Serial.println("ESP-NOW init failed");
     return;
   }
   Serial.println("Initialized ESP-NOW");
-
-  if (!SPIFFS.begin(true))
-  {
-    Serial.println("SPIFFS initialization failed!");
-    return;
-  }
 
   esp_now_register_recv_cb(OnDataRecv);
   espNowAddReceiver(broadcastAddress);
@@ -70,15 +70,18 @@ void setup()
   tideBinSemaphore = xSemaphoreCreateBinary();
   commandQueue = xQueueCreate(COMMAND_QUEUE_LEN, sizeof(char[500]));
 
-  xTaskCreatePinnedToCore(receiveHardwareData, "Recieve Hardware Data from c# app", 2048, NULL, 2, NULL, PRO_CPU_NUM);
-  xTaskCreatePinnedToCore(sendHardwareData, "Send Hardware Data to nextion", 2048, NULL, 1, NULL, APP_CPU_NUM);
-  xTaskCreatePinnedToCore(sendWeatherData, "Send Weather Data to nextion", 2048, NULL, 1, NULL, APP_CPU_NUM);
+  xTaskCreatePinnedToCore(receiveHardwareData, "Recieve Hardware Data from c# app", 8192, NULL, 2, NULL, PRO_CPU_NUM);
+  xTaskCreatePinnedToCore(sendHardwareData, "Send Hardware Data to nextion", 8192, NULL, 1, NULL, APP_CPU_NUM);
+  xTaskCreatePinnedToCore(sendWeatherData, "Send Weather Data to nextion", 8192, NULL, 1, NULL, APP_CPU_NUM);
   // Uncomment to enable tide data transfer - see README
-  // xTaskCreatePinnedToCore(sendTideData, "Send Tide Data to nextion", 2048, NULL, 1, NULL, APP_CPU_NUM);
-  xTaskCreatePinnedToCore(receiveNextionSerial, "Receive data from nextion", 2048, NULL, 1, NULL, APP_CPU_NUM);
+  // xTaskCreatePinnedToCore(sendTideData, "Send Tide Data to nextion", 8192, NULL, 1, NULL, APP_CPU_NUM);
+  xTaskCreatePinnedToCore(receiveNextionSerial, "Receive data from nextion", 16384, NULL, 1, NULL, APP_CPU_NUM);
   xTaskCreatePinnedToCore(executeCommands, "Execute nextion commands", 8192, NULL, 1, NULL, APP_CPU_NUM);
-  xTaskCreatePinnedToCore(sendTempData, "Send Hardware temperature data", 2048, NULL, 1, &sendTempDataHandle, APP_CPU_NUM);
+  xTaskCreatePinnedToCore(sendTempData, "Send Hardware temperature data", 8192, NULL, 1, &sendTempDataHandle, APP_CPU_NUM);
   vTaskSuspend(sendTempDataHandle);
+
+  Serial.print("Reset reason: ");
+  Serial.println(esp_reset_reason());
 
   vTaskDelete(NULL); // Delete the main task -> loop() will never run
 }
@@ -86,5 +89,8 @@ void setup()
 void loop()
 {
   Serial.println("------------Main Loop------------");
-  vTaskDelay(100 / portTICK_PERIOD_MS);
+  Serial.println("Free Heap: " + String(ESP.getFreeHeap()));
+  UBaseType_t stackLeft = uxTaskGetStackHighWaterMark(NULL);
+  Serial.println("Stack Loop: " + String(stackLeft));
+  vTaskDelay(2000 / portTICK_PERIOD_MS);
 }
