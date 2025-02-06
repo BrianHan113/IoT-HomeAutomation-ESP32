@@ -75,7 +75,7 @@ void setup()
   xTaskCreatePinnedToCore(sendWeatherData, "Send Weather Data to nextion", 32768, NULL, 1, NULL, APP_CPU_NUM);
   // Uncomment to enable tide data transfer - see README
   // xTaskCreatePinnedToCore(sendTideData, "Send Tide Data to nextion", 32768, NULL, 1, NULL, APP_CPU_NUM);
-  xTaskCreatePinnedToCore(receiveNextionSerial, "Receive data from nextion", 65536, NULL, 1, NULL, APP_CPU_NUM);
+  xTaskCreatePinnedToCore(receiveNextionSerial, "Receive data from nextion", 65536, NULL, 2, NULL, APP_CPU_NUM);
   xTaskCreatePinnedToCore(executeCommands, "Execute nextion commands", 65536, NULL, 1, NULL, APP_CPU_NUM);
   xTaskCreatePinnedToCore(sendTempData, "Send Hardware temperature data", 2048, NULL, 1, &sendTempDataHandle, APP_CPU_NUM);
   vTaskSuspend(sendTempDataHandle);

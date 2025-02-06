@@ -162,7 +162,7 @@ void receiveNextionSerial(void *params)
             uint8_t byteReceived = nextion.read();
             if (!isProcessingNum)
             {
-                if ((byteReceived < 0x21 || byteReceived > 0x7E) && byteReceived != 0x03)
+                if ((byteReceived < 0x21 || byteReceived > 0x7E) && byteReceived != 0x03 || byteReceived == 0x24)
                 {
                     continue;
                 }
@@ -234,7 +234,7 @@ void receiveNextionSerial(void *params)
                 }
             }
         }
-        vTaskDelay(10 / portTICK_PERIOD_MS);
+        vTaskDelay(5 / portTICK_PERIOD_MS);
     }
 }
 

@@ -9,7 +9,7 @@ extern String channel;
 extern bool isEnabled;
 extern int timeoutMins;
 extern boolean motionDetected;
-extern esp_timer_handle_t timerHandle;
+extern TimerHandle_t turnOffTimer;
 
 void espNowAddReceiver(const uint8_t *receiver)
 {
@@ -68,11 +68,13 @@ void OnDataRecv(const uint8_t *mac, const uint8_t *incomingData, int len)
         timeoutMins = dataString.toInt();
         motionDetected = false; // Reset motion detected flag
         // Delete callback if exists
-        if (timerHandle != NULL)
+        // Delete callback if exists
+        if (turnOffTimer != NULL)
         {
-            esp_timer_stop(timerHandle);
-            esp_timer_delete(timerHandle);
-            timerHandle = NULL;
+            // Stop and delete the FreeRTOS timer
+            xTimerStop(turnOffTimer, 0);   // 0 is the block time (non-blocking)
+            xTimerDelete(turnOffTimer, 0); // 0 is the block time (non-blocking)
+            turnOffTimer = NULL;
         }
     }
     else if (strncmp(receivedData, "ENABLE", strlen("ENABLE")) == 0)

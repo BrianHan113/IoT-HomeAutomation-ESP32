@@ -350,7 +350,7 @@ namespace SerialSender
 
                         Scheduler.ScheduleSwitch(SW, channel, start, end);
 
-                        // For testing
+                        ////For testing
                         //start = DateTime.Now.AddMinutes(1).ToString("HHmm");
                         //end = DateTime.Now.AddMinutes(2).ToString("HHmm");
                         //Scheduler.ScheduleSwitch(SW, channel, start, end);

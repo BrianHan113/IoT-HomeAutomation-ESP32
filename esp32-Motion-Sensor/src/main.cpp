@@ -16,9 +16,11 @@ String channel = "";
 
 boolean pirState;
 boolean motionDetected = false;
-esp_timer_handle_t timerHandle = NULL;
 
-void turnSwitchOff(void *arg)
+// FreeRTOS Timer handle
+TimerHandle_t turnOffTimer = NULL;
+
+void turnSwitchOff(TimerHandle_t xTimer)
 {
   char dataToSend[32] = "";
   Serial.println("Function executed after delay.");
@@ -81,16 +83,24 @@ void motionDetectTask(void *params)
         Serial.printf("Sending Motion info error: %d\n", result);
       }
       vTaskDelay(1000 / portTICK_PERIOD_MS);
-      int64_t delayMicroseconds = timeoutMins * 60 * 1000000;
-      // delayMicroseconds = 5 * 1000000; // 5 seconds for testing
-      esp_timer_create_args_t timerArgs = {
-          .callback = &turnSwitchOff,
-          .arg = NULL,
-          .dispatch_method = ESP_TIMER_TASK,
-          .name = "turnSwitchOffAfterDelay"};
+      // Create and start FreeRTOS timer
+      int timeoutInTicks = timeoutMins * 60 * 1000 / portTICK_PERIOD_MS; // Timeout in ticks
 
-      esp_timer_create(&timerArgs, &timerHandle);
-      esp_timer_start_once(timerHandle, delayMicroseconds);
+      if (timeoutInTicks <= 0)
+      {
+        timeoutInTicks = 1000 / portTICK_PERIOD_MS;
+      }
+
+      turnOffTimer = xTimerCreate(
+          "MyTimer",                     // Timer name
+          pdMS_TO_TICKS(timeoutInTicks), // Timer period in ticks (1 second)
+          pdFALSE,                       // Auto-reload (repeat)
+          (void *)0,                     // ID for the timer (not used here)
+          turnSwitchOff                  // Timer callback function
+      );
+
+      xTimerStart(turnOffTimer, 0);
+
       vTaskDelay(1000 / portTICK_PERIOD_MS);
     }
 
@@ -110,7 +120,11 @@ void setup()
   esp_now_register_send_cb(OnDataSent);
   esp_now_register_recv_cb(OnDataRecv);
 
-  xTaskCreatePinnedToCore(motionDetectTask, "Motion detection", 2048, NULL, 1, NULL, APP_CPU_NUM);
+  // Create FreeRTOS timer
+  turnOffTimer = xTimerCreate("turnOffTimer", pdMS_TO_TICKS(1), pdFALSE, (void *)0, turnSwitchOff);
+
+  // Create and start motion detection task
+  xTaskCreatePinnedToCore(motionDetectTask, "Motion detection", 8192, NULL, 1, NULL, APP_CPU_NUM);
 
   vTaskDelete(NULL); // Delete main task as it is not used
 }

@@ -56,7 +56,7 @@ namespace SerialSender
                     else
                     {
                         Console.WriteLine("No directory selected. Exiting...");
-                        break; // Exit if the user cancels the dialog
+                        break;
                     }
                 }
             }
@@ -86,7 +86,7 @@ namespace SerialSender
 
 
             int attempts = 0;
-            int maxAttempts = 20;
+            int maxAttempts = 5;
 
             while (attempts < maxAttempts)
             {
@@ -99,7 +99,8 @@ namespace SerialSender
                 else
                 {
                     attempts++;
-                    System.Threading.Thread.Sleep(500);
+                    Console.WriteLine("Trying to open");
+                    System.Threading.Thread.Sleep(1000);
                 }
             }
 
