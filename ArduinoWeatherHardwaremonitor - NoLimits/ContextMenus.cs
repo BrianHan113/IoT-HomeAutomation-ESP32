@@ -349,6 +349,11 @@ namespace SerialSender
                         Console.WriteLine($"Channel: {channel}");
 
                         Scheduler.ScheduleSwitch(SW, channel, start, end);
+
+                        // For testing
+                        //start = DateTime.Now.AddMinutes(1).ToString("HHmm");
+                        //end = DateTime.Now.AddMinutes(2).ToString("HHmm");
+                        //Scheduler.ScheduleSwitch(SW, channel, start, end);
                     }
                 }
                 else if (data.StartsWith("LOCATION"))

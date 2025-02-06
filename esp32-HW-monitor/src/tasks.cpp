@@ -78,7 +78,7 @@ void receiveHardwareData(void *params)
             else if (receivedData.startsWith("SCHEDULE"))
             {
                 String receivedString = receivedData.substring(8);
-                Serial.println("Testing: " + receivedString);
+                // Serial.println("Testing: " + receivedString);
                 for (int i = 0; i < numSwitches; i++)
                 {
                     String currentSwitch = (String)switches[i];
@@ -211,6 +211,10 @@ void receiveNextionSerial(void *params)
                 {
                     Serial.println("Queue full");
                 }
+                else
+                {
+                    Serial.println(buffer);
+                }
 
                 bufferIndex = 0;
                 memset(buffer, 0, BUFFER_SIZE);
@@ -250,7 +254,7 @@ void executeCommands(void *params)
             return;
         }
 
-        Serial.println(command);
+        // Serial.println(command);
         String commandString = (String)command;
 
         if (commandString == "RESETSETTINGS")
@@ -285,7 +289,7 @@ void executeCommands(void *params)
             }
 
             String selectedEspsString = commandString.substring(8);
-            Serial.println(selectedEspsString);
+            // Serial.println(selectedEspsString);
 
             int startIndex = 0;
             while (true)
@@ -342,20 +346,20 @@ void executeCommands(void *params)
                 {
                     String device = withoutCommand.substring(currentSwitch.length());
                     switchDeviceMap[currentSwitch].push_back(device);
-                    displaySwitchDeviceMap();
                     break;
                 }
             }
+            // displaySwitchDeviceMap();
         }
         else if (commandString.startsWith("SCHEDULE"))
         {
-            Serial.println("Sending to desktop app");
+            // Serial.println("Sending to desktop app");
             Serial0.println(commandString);
         }
         else if (commandString.startsWith("WEATHERDELTA"))
         {
             String delta = commandString.substring(12);
-            Serial.println("Sending to desktop app");
+            // Serial.println("Sending to desktop app");
             Serial0.println(commandString);
         }
         else if (commandString.startsWith("LEDSTRIP"))
@@ -453,17 +457,17 @@ void executeCommands(void *params)
         }
         else if (commandString.startsWith("LOCATION"))
         {
-            Serial.println("Location data");
+            // Serial.println("Location data");
             Serial0.println(commandString);
         }
         else if (commandString == "REFRESHWEATHER")
         {
-            Serial.println("Refresh weather");
+            // Serial.println("Refresh weather");
             Serial0.println("REFRESHWEATHER"); // Redirect command to c# app to fetch weather data
         }
         else if (commandString == "REFRESHTIDE")
         {
-            Serial.println("Refreshing Tides");
+            // Serial.println("Refreshing Tides");
             Serial0.println("REFRESHTIDE");
         }
         else if (commandString == "REFRESHCAM1")
