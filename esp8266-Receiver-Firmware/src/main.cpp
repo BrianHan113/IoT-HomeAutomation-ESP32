@@ -3,7 +3,7 @@
 
 #define LED 2
 
-String EspID = "ENTER_ID_HERE";
+String EspID = "ESP8266";
 
 void setup()
 {
@@ -11,6 +11,8 @@ void setup()
   digitalWrite(LED, HIGH); // Ensure LED is off
   Serial.begin(115200);
   WiFi.mode(WIFI_STA);
+  WiFi.disconnect();
+  wifi_set_channel(1);
 
   if (esp_now_init() != 0)
   {

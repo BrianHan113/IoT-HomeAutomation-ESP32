@@ -4,6 +4,7 @@
 #include <esp_now.h>
 #include <Arduino.h>
 #include "WiFi.h"
+#include "esp_wifi.h"
 
 void OnDataSent(const uint8_t *mac_addr, esp_now_send_status_t status);
 void espNowAddReceiver(const uint8_t *receiver);

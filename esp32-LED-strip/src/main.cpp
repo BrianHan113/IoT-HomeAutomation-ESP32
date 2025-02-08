@@ -21,7 +21,9 @@ void setup()
 {
   Serial.begin(115200);
   WiFi.mode(WIFI_STA);
-  WiFi.channel(1);
+  WiFi.disconnect();
+  esp_wifi_set_channel(1, WIFI_SECOND_CHAN_NONE);
+
   esp_now_init();
 
   esp_now_register_send_cb(OnDataSent);
@@ -54,14 +56,3 @@ void loop()
 
   vTaskDelay(100 / portTICK_PERIOD_MS);
 }
-
-// uint8_t r, g, b;
-// r = (colour >> 11) & 0x1F; // Red: 5 bits
-// g = (colour >> 5) & 0x3F;  // Green: 6 bits
-// b = colour & 0x1F;         // Blue: 5 bits
-
-// // Scale to 8 bits (0–255)
-// r = (r * 255) / 31; // Scale 5-bit to 8-bit
-// g = (g * 255) / 63; // Scale 6-bit to 8-bit
-// b = (b * 255) / 31;
-// leds[1] = CRGB(g, r, b);

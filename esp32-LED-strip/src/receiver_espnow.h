@@ -2,6 +2,7 @@
 #define RECEIVER_ESPNOW_H
 
 #include <esp_now.h>
+#include <esp_wifi.h>
 #include <Arduino.h>
 #include "WiFi.h"
 #include <FastLED.h>

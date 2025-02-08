@@ -30,8 +30,8 @@ void OnDataRecv(const uint8_t *mac, const uint8_t *incomingData, int len)
 {
 
     char receivedData[32];
-    // Serial.println(receivedData);
     memcpy(&receivedData, incomingData, sizeof(receivedData));
+    Serial.println(receivedData);
 
     if (strncmp(receivedData, "GETMACADDRESS", strlen("GETMACADDRESS")) == 0)
     {
@@ -51,7 +51,7 @@ void OnDataRecv(const uint8_t *mac, const uint8_t *incomingData, int len)
     {
         isStripOn = true;
     }
-    else if (strncmp(receivedData, "OFF", strlen("ON")) == 0)
+    else if (strncmp(receivedData, "OFF", strlen("OFF")) == 0)
     {
         isStripOn = false;
     }

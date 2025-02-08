@@ -41,6 +41,8 @@ void OnDataRecv(u8 *mac, u8 *data, u8 len)
         strcat(dataToSend, EspID.c_str());
         esp_now_send(mac, (u8 *)dataToSend, sizeof(dataToSend));
     }
+
+    // All possible ON states: "ONA", "ONAB", "ONB", you can add functionality for each case
     else if (strncmp(receivedData, "ON", strlen("ON")) == 0)
     {
         digitalWrite(2, LOW);

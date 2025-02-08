@@ -35,7 +35,8 @@ void setup()
   delay(3000);
 
   WiFi.mode(WIFI_STA);
-  WiFi.channel(1);
+  WiFi.disconnect();
+  esp_wifi_set_channel(1, WIFI_SECOND_CHAN_NONE);
 
   // Setup for camera capture functionality - see README
   // WiFi.mode(WIFI_AP_STA);

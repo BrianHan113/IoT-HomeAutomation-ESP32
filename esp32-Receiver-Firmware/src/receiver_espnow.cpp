@@ -36,10 +36,10 @@ void OnDataRecv(const uint8_t *mac, const uint8_t *incomingData, int len)
         Serial.println("Sending MAC");
         char dataToSend[32];
         strcpy(dataToSend, "MACSEND");
-        // strcat(dataToSend, WiFi.macAddress().c_str());
         strcat(dataToSend, EspID.c_str());
         esp_now_send(mac, (const uint8_t *)dataToSend, sizeof(dataToSend));
     }
+    // All possible ON states: "ONA", "ONAB", "ONB", you can add functionality for each case
     else if (strncmp(receivedData, "ON", strlen("ON")) == 0)
     {
         digitalWrite(2, HIGH);
