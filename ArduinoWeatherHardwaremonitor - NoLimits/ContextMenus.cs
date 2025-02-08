@@ -398,20 +398,24 @@ namespace SerialSender
 
             try
             {
-                var files = Directory.GetFiles(directoryPath, "*.m4a");
+                // All playable audio files in WinAmp
+                var extensions = new[] { ".mp3", ".midi", ".mod", ".mpg", ".mpeg", ".aac", ".m4a", ".flac", ".wav", ".wma", ".ogg" };
+                var files = Directory.GetFiles(directoryPath)
+                    .Where(f => extensions.Any(ext => f.ToLower().EndsWith(ext)))
+                    .ToList();
+
                 var songOptions = string.Join("BREAK", files.Select(f => Path.GetFileName(f)));
                 songs.AddRange(files);
 
                 Console.WriteLine(songOptions);
                 EnqueueData("MUSICSTRING" + songOptions + (char)0x03);
             }
-            catch (Exception ex) 
-            { 
+            catch (Exception ex)
+            {
                 Console.WriteLine(ex.ToString());
             }
-
-            
         }
+
         /////////////////////////////////////////////////////////
 
         public void weatherapp(object StateObj)

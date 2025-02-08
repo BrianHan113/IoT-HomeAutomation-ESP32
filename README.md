@@ -41,7 +41,7 @@ IoT Home Automation system using ESP32s to control various peripherals, develope
 5. Start the ArduinoWeatherHardwareMonitor desktop app, make sure to run as admin
 6. Select the appropriate serial port by right clicking the tray icon
 
-At this point, the waveforms and weather information should have loaded on the main page, the LOCKPC button and the music player should be working. Right click the tray icon to select your WinAmp installation folder and your music folder. You will only have to do this once, unless you change your WinAmp path or your music folder. 
+At this point, the waveforms and weather information should have loaded on the main page, the LOCKPC button and the music player should be working. Right click the tray icon to select your WinAmp installation folder and your music folder. You will only have to do this once, unless you change your WinAmp path or your music folder. The music player plays MP3, MIDI, MOD, MPEG-1, AAC, M4A, FLAC, WAV, WMA, Ogg Vorbis. 
 
 ### Linking and Turning Peripherals on/off
 <div style="display: flex; align-items: center;">
