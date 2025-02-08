@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading;
 using System.Windows.Forms;
 
 namespace SerialSender
@@ -12,9 +13,11 @@ namespace SerialSender
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
 
-            WinAmp.SetupWinamp();
             WinAmp.SetupMusicFolder();
+            WinAmp.SetupWinamp();
+            
             Console.WriteLine(WinAmp.directoryPath);
+            
             Console.WriteLine(WinAmp.musicFolderPath);
 
 

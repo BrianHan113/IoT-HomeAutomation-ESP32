@@ -78,13 +78,11 @@ namespace SerialSender
                 } else
                 {
                     Console.WriteLine("Invalid dir");
-                    SelectInstallDir();
                 }
             }
             else
             {
                 Console.WriteLine("No cache file");
-                SelectInstallDir();
             }
 
 
@@ -165,13 +163,11 @@ namespace SerialSender
                 else
                 {
                     Console.WriteLine("Invalid dir");
-                    SelectMusicFolderDir();
                 }
             }
             else
             {
                 Console.WriteLine("No cache file");
-                SelectMusicFolderDir();
             }
 
             return true;
