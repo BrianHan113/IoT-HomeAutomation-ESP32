@@ -22,6 +22,14 @@ TimerHandle_t turnOffTimer = NULL;
 
 void turnSwitchOff(TimerHandle_t xTimer)
 {
+
+  if (!isEnabled)
+  {
+    Serial.println("Tried to turn off but Motion Sensor not enabled");
+    motionDetected = false;
+    return;
+  }
+
   char dataToSend[32] = "";
   Serial.println("Function executed after delay.");
   strcpy(dataToSend, (linkedSwitch + "OFF").c_str());
