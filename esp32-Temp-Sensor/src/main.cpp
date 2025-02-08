@@ -78,14 +78,10 @@ void tempDetectTask(void *params)
         Serial.printf("Turning on Temp linked SW error: %d\n", result);
       }
 
-      // when hysteresis is 0, keep the switch on
-      if (hysterisisPercentage > 0)
-      {
-        isCheckingHysterisis = true;
-      }
+      isCheckingHysterisis = true;
     }
 
-    if (isCheckingHysterisis && temperature <= hysterisisTemp)
+    if (isCheckingHysterisis && temperature < hysterisisTemp)
     {
       Serial.println("Turn Switch off");
       char dataToSend[32] = "";
