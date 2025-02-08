@@ -24,8 +24,11 @@ namespace SerialSender
         public const uint DECREASE_VOLUME = 40059;
         public static IntPtr hwnd = IntPtr.Zero;
 
-        const string cacheFile = "winamp_directory_cache.txt";
+        const string winampCacheFile = "winamp_directory_cache.txt";
+        const string musicFolderCacheFile= "music_folder_cache.txt";
+
         public static string directoryPath;
+        public static string musicFolderPath;
 
         public static void SelectInstallDir()
         {
@@ -42,9 +45,9 @@ namespace SerialSender
 
                         if (File.Exists(winampPath))
                         {
-                            File.WriteAllText(cacheFile, directoryPath);
+                            File.WriteAllText(winampCacheFile, directoryPath);
                             Console.WriteLine($"Selected Directory: {directoryPath}");
-                            Console.WriteLine($"Directory saved to cache: {cacheFile}");
+                            Console.WriteLine($"Directory saved to cache: {winampCacheFile}");
                             Process.Start(winampPath);
                             break; // Exit the loop once valid input is provided
                         }
@@ -65,9 +68,9 @@ namespace SerialSender
 
         public static bool SetupWinamp()
         {
-            if (File.Exists(cacheFile))
+            if (File.Exists(winampCacheFile))
             {
-                directoryPath = File.ReadAllText(cacheFile);
+                directoryPath = File.ReadAllText(winampCacheFile);
                 if (Directory.Exists(directoryPath) && File.Exists(Path.Combine(directoryPath, "winamp.exe")))
                 {
                     Console.WriteLine($"Using cached directory: {directoryPath}");
@@ -113,6 +116,64 @@ namespace SerialSender
             System.Threading.Thread.Sleep(1000); // need to wait for window to load to hide it
             hwnd = FindWindow("Winamp v1.x", null);
             SendMessage(hwnd, WM_COMMAND, (IntPtr)TOGGLE_VISIBILITY, IntPtr.Zero);
+            return true;
+        }
+
+        public static void SelectMusicFolderDir()
+        {
+            while (true)
+            {
+                using (var folderDialog = new FolderBrowserDialog())
+                {
+                    folderDialog.Description = "Select Music folder";
+                    DialogResult result = folderDialog.ShowDialog();
+                    if (result == DialogResult.OK && !string.IsNullOrWhiteSpace(folderDialog.SelectedPath))
+                    {
+                        musicFolderPath = folderDialog.SelectedPath;
+
+                        if (Directory.Exists(musicFolderPath))
+                        {
+                            File.WriteAllText(musicFolderCacheFile, musicFolderPath);
+                            Console.WriteLine($"Selected Directory: {musicFolderPath}");
+                            Console.WriteLine($"Directory saved to cache: {musicFolderCacheFile}");
+                            break;
+                        }
+                        else
+                        {
+                            Console.WriteLine("Invalid folder");
+                        }
+                    }
+                    else
+                    {
+                        Console.WriteLine("No directory selected. Exiting...");
+                        break;
+                    }
+                }
+            }
+        }
+
+        public static bool SetupMusicFolder()
+        {
+            if (File.Exists(musicFolderCacheFile))
+            {
+                musicFolderPath = File.ReadAllText(musicFolderCacheFile);
+                if (Directory.Exists(musicFolderPath))
+                {
+                    Console.WriteLine($"Using cached music folder: {musicFolderPath}");
+                    
+                }
+                else
+                {
+                    Console.WriteLine("Invalid dir");
+                    SelectMusicFolderDir();
+                }
+            }
+            else
+            {
+                Console.WriteLine("No cache file");
+                SelectMusicFolderDir();
+            }
+
             return true;
         }
     }

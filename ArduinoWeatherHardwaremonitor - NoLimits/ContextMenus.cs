@@ -11,6 +11,7 @@ using System.Threading;
 using System.Collections.Concurrent;
 using System.IO;
 using System.Net.Http;
+using System.Linq.Expressions;
 
 
 
@@ -169,6 +170,14 @@ namespace SerialSender
             menu.Items.Add(sep);
 
             item = new ToolStripMenuItem();
+            item.Text = "Music Folder";
+            item.Click += (sender, e) => WinAmp.SelectMusicFolderDir();
+            menu.Items.Add(item);
+
+            sep = new ToolStripSeparator();
+            menu.Items.Add(sep);
+
+            item = new ToolStripMenuItem();
             item.Text = "Exit";
             item.Click += new System.EventHandler(Exit_Click);
             item.Image = Resources.Exit;
@@ -271,7 +280,7 @@ namespace SerialSender
                 }
                 else if (data == "REFRESHMUSIC")
                 {
-                    SendSongString(Path.GetFullPath(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "..", "..", "music")));
+                    SendSongString(WinAmp.musicFolderPath);
                 }
                 else if (data.StartsWith("PLAYMUSIC"))
                 {
@@ -386,12 +395,22 @@ namespace SerialSender
         public static void SendSongString(string directoryPath)
         {
             songs.Clear();
-            var files = Directory.GetFiles(directoryPath, "*.m4a");
-            var songOptions = string.Join("BREAK", files.Select(f => Path.GetFileName(f)));
-            songs.AddRange(files);
 
-            Console.WriteLine(songOptions);
-            EnqueueData("MUSICSTRING" + songOptions + (char)0x03);
+            try
+            {
+                var files = Directory.GetFiles(directoryPath, "*.m4a");
+                var songOptions = string.Join("BREAK", files.Select(f => Path.GetFileName(f)));
+                songs.AddRange(files);
+
+                Console.WriteLine(songOptions);
+                EnqueueData("MUSICSTRING" + songOptions + (char)0x03);
+            }
+            catch (Exception ex) 
+            { 
+                Console.WriteLine(ex.ToString());
+            }
+
+            
         }
         /////////////////////////////////////////////////////////
 

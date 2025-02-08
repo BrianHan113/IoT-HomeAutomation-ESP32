@@ -13,7 +13,9 @@ namespace SerialSender
             Application.SetCompatibleTextRenderingDefault(false);
 
             WinAmp.SetupWinamp();
+            WinAmp.SetupMusicFolder();
             Console.WriteLine(WinAmp.directoryPath);
+            Console.WriteLine(WinAmp.musicFolderPath);
 
 
             using (ProcessIcon pi = new ProcessIcon())
