@@ -16,6 +16,7 @@ uint32_t nextionNumConvert(int start, int end, String command)
     uint8_t numberData[len];
     uint32_t commandNumData = 0;
 
+    // Nextion sends number data in little-endian format, so reverse it
     for (int i = 0; i < len; i++)
     {
         numberData[len - 1 - i] = static_cast<uint8_t>(command.charAt(start + i));
@@ -79,7 +80,7 @@ void sendCommandToDevice(String command, String device)
     displayMacAddress(MAC);
 }
 
-// WEATHER STUFF
+// WEATHER STUFF - a lot of hard coding ids, but it's unavoidable due to how images are stored on the Nextion display
 int weatherCodeToNextionPicID(int code, bool isDay)
 {
     if (code == 0) // Clear

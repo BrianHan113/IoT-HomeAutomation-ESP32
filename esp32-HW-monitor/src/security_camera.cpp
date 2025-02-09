@@ -5,6 +5,7 @@ extern HardwareSerial nextion;
 const String cam1ServerUrl = "http://esp32cam1.local/capture";
 const String cam2ServerUrl = "http://esp32cam2.local/capture";
 
+// Follows sending file instructions from Nextion's instruction set documentation
 void sendPacket(uint8_t *data, size_t length, uint16_t packetID)
 {
     uint8_t header[12] = {

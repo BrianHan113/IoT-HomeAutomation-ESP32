@@ -150,6 +150,7 @@ void receiveNextionSerial(void *params)
         if (nextion.available())
         {
 
+            // Project follows rule that number data is sent between NUMS and NUME to avoid confusion with 0x03 termination char
             if (miniBuffer[0] == 'N' && miniBuffer[1] == 'U' && miniBuffer[2] == 'M' && miniBuffer[3] == 'S')
             {
                 isProcessingNum = true;
@@ -345,7 +346,7 @@ void executeCommands(void *params)
                 if (withoutCommand.startsWith(currentSwitch))
                 {
                     String device = withoutCommand.substring(currentSwitch.length());
-                    switchDeviceMap[currentSwitch].push_back(device);
+                    switchDeviceMap[currentSwitch].push_back(device); // Add device to the list of devices for the switch
                     break;
                 }
             }
@@ -612,7 +613,7 @@ void sendHardwareData(void *params)
 
         totalPower = ((cpuPackagePower + gpuPower));
 
-        // waveform is 100px high
+        // Dynamic scaling of y-axis for power, the waveform is 100px high
         if (totalPower <= 100)
         {
             nextionWaveformYAxisScale(0, 100, "main.power");
