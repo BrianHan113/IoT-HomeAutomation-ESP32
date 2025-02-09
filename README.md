@@ -1,10 +1,10 @@
 # IoT-HomeAutomation-ESP32
 
-IoT Home Automation system using ESP32s to control various peripherals, developed with amazing help and under supervision of Alex Risos from Risos Enterprises for my summer 2024-25 internship. This project comes with pre-made examples of peripherals, but the esp32-Receiver-Firmware can be flashed and easily modified on any ESP32 for any custom functionality. There are 2 versions of the project:
+IoT Home Automation system using ESP32s to control various peripherals, developed with amazing help and under supervision of Alex Risos from Risos Enterprises for my summer 2024-25 internship. This project comes with pre-made examples of peripherals, but the esp32-Receiver-Firmware can be flashed and easily modified on any ESP32 for any custom functionality. There are 2 versions of the project, read the Known Issues section to see why.
 
 <table align="center">
   <tr>
-    <th style="text-align:center;">Simplified</th>
+    <th style="text-align:center;">Simplified (Recommended)</th>
     <th style="text-align:center;">Full</th>
   </tr>
   <tr>
@@ -13,8 +13,14 @@ IoT Home Automation system using ESP32s to control various peripherals, develope
   </tr>
 </table>
 
-## Demo Video
+## Demo Video (Simplified Version)
 
+<a href="https://www.youtube.com/watch?v=IO-2psQk7W8">
+    <img src="https://img.youtube.com/vi/IO-2psQk7W8/0.jpg" width="300">
+</a>
+
+
+This demo covers the linking and usage of the esp32-SSR, esp32-LED-strip, esp32-Motion-Sensor, and esp32-Temp-Sensor. I linked them all onto one switch for demonstration purposes, but you could obviously link them to other switches. The SSR isn't hooked up to anything, but it is rated for any 100-240VAC load. With just this bare bones setup, you could automate many things, like activating some LED night lights when motion is detected, setting off an emergency alarm when the temperature sensor triggers, turning on a light bulb when entering a room, etc. 
 
 ## Summary of features
 * Detection and pairing with powered ESPs that have the receiver firmware programmed
@@ -216,7 +222,9 @@ Uses a WS2815 12V LED Strip with primary data line connected to pin 26 on a esp3
     <ol>
       <li><strong>Lat & Long</strong>: Standard Lat Long, + for North of equator, + for East of Prime Meridian</li>
       <li><strong>Delta Hours</strong>: Time gap between each weather forecast. E.g. delta hour of 6 will give a forecast of now, +6h, +12h, +18h in the main screen.</li>
+      <li>Hit <strong>APPLY</strong>, It will take a couple seconds for the weather icons to be updated.</li> 
     </ol>
+    <p>Note that the weather is automatically updated every 5 minutes. Pressing <strong>APPLY</strong> manually fetches new data.</p>
   </div></td>
     <td align="center"><div style="align-items: center;">
   <div>
