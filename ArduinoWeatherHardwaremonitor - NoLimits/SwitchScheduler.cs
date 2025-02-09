@@ -47,6 +47,7 @@ static class Scheduler
         Timer timer = new Timer(_ =>
         {
             String action;
+            // Temp and motion sensors dont have channels as they aren't linked to actual switches in nextion
             if (SW == "TEMPSENSOR" || SW == "MOTIONSENSOR")
             {
                 action = "ENABLE";
@@ -76,6 +77,7 @@ static class Scheduler
             Console.WriteLine("SCHEDULE" + SW + action + (char)0x03);
             ContextMenus.EnqueueData("SCHEDULE" + SW + action + (char)0x03);
 
+            // Reschedule the same switch for the next day
             ScheduleSwitch(SW, channel, start, end);
 
         }, null, delayToEnd, Timeout.InfiniteTimeSpan);

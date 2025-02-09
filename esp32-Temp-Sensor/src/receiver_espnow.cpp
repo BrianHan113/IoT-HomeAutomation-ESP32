@@ -62,7 +62,7 @@ void OnDataRecv(const uint8_t *mac, const uint8_t *incomingData, int len)
         String dataString = ((String)receivedData).substring(strlen("TRIGGER"));
         triggerTemp = dataString.toInt();
         Serial.println("Trigger temp: " + (String)triggerTemp);
-        isCheckingHysterisis = false;
+        isCheckingHysterisis = false; // On reconfig, reset to starting state
     }
     else if (strncmp(receivedData, "HYSTERISIS", strlen("HYSTERISIS")) == 0)
     {

@@ -1,3 +1,5 @@
+// NOTE: Most of this is taken from the example code provided by the library and adapted to fit the project needs
+
 #include "esp_camera.h"
 #include <WiFi.h>
 #include <ESPmDNS.h>

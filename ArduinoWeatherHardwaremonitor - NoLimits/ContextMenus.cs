@@ -37,6 +37,8 @@ namespace SerialSender
 {
     //////////////////////////////////////////////////////////////////
 
+    // Class definitions used to deserialize JSON from API calls
+    // Weather stuff
     public class WeatherObject
     {
         public Hourly hourly { get; set; }
@@ -61,6 +63,7 @@ namespace SerialSender
         public List<String> sunset { get; set; }
     }
 
+    // Tide stuff
     public class RootTideObject
     {
         public List<Tide> data { get; set; }
@@ -79,7 +82,6 @@ namespace SerialSender
 
     public class ContextMenus
     {
-
         const int BAUD_RATE = 115200;
         SerialPort SelectedSerialPort;
         ContextMenuStrip menu;
@@ -114,11 +116,8 @@ namespace SerialSender
             thisComputer = new LibreHardwareMonitor.Hardware.Computer() { };
             thisComputer.IsCpuEnabled = true;
             thisComputer.IsGpuEnabled = true;
-            //   thisComputer.IsMotherboardEnabled = true; // no sensors
             thisComputer.IsMemoryEnabled = true;
-            //   thisComputer.IsControllerEnabled = true; //bugged
             thisComputer.IsNetworkEnabled = true;
-            //   thisComputer.IsStorageEnabled = true; //stupid bug here
             thisComputer.Open();
 
             menu = new ContextMenuStrip();
@@ -241,7 +240,7 @@ namespace SerialSender
             System.Threading.TimerCallback TimerDelegate2 = new System.Threading.TimerCallback(weatherapp);
             System.Threading.TimerCallback TimerDelegate3 = new System.Threading.TimerCallback(readSerial);
             System.Threading.TimerCallback TimerDelegate4 = new System.Threading.TimerCallback(sendData);
-            //System.Threading.TimerCallback TimerDelegate5 = new System.Threading.TimerCallback(tideData); // Uncomment to auto schedule tide data refresh (But tokens are very expensive)
+            //System.Threading.TimerCallback TimerDelegate5 = new System.Threading.TimerCallback(tideData); // Uncomment to auto schedule tide data refresh (But be warned tokens are very expensive)
 
 
             TimerItem = new System.Threading.Timer(TimerDelegate, StateObj, 1000, 2500); //hardware

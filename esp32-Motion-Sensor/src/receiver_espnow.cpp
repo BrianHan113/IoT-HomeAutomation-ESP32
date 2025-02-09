@@ -66,8 +66,9 @@ void OnDataRecv(const uint8_t *mac, const uint8_t *incomingData, int len)
         String dataString = ((String)receivedData).substring(strlen("TIMEOUT"));
         Serial.println("Timeout: " + dataString);
         timeoutMins = dataString.toInt();
+
+        // Upon reconfiguration, reset to starting state
         motionDetected = false; // Reset motion detected flag
-        // Delete callback if exists
         // Delete callback if exists
         if (turnOffTimer != NULL)
         {

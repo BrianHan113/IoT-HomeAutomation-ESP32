@@ -100,12 +100,11 @@ void motionDetectTask(void *params)
       }
 
       turnOffTimer = xTimerCreate(
-          "MyTimer",                     // Timer name
-          pdMS_TO_TICKS(timeoutInTicks), // Timer period in ticks (1 second)
-          pdFALSE,                       // Auto-reload (repeat)
-          (void *)0,                     // ID for the timer (not used here)
-          turnSwitchOff                  // Timer callback function
-      );
+          "MyTimer",
+          pdMS_TO_TICKS(timeoutInTicks),
+          pdFALSE,
+          (void *)0,
+          turnSwitchOff);
 
       xTimerStart(turnOffTimer, 0);
 

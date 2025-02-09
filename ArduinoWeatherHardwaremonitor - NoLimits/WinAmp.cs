@@ -15,6 +15,7 @@ namespace SerialSender
         [DllImport("user32.dll", CharSet = CharSet.Auto)]
         public static extern IntPtr FindWindow(string lpClassName, string lpWindowName);
 
+        // Used for WM command sending to WinAmp window
         [DllImport("user32.dll")]
         public static extern IntPtr SendMessage(IntPtr hwnd, uint msg, IntPtr wParam, IntPtr lParam);
         public const uint WM_COMMAND = 0x0111; // Command mode

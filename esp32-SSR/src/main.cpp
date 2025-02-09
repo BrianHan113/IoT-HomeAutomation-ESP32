@@ -10,6 +10,8 @@ void setup()
 {
   pinMode(CH1_PIN, OUTPUT);
   pinMode(CH2_PIN, OUTPUT);
+
+  // Turn off the relay (assuming low level trigger relay)
   digitalWrite(CH1_PIN, HIGH);
   digitalWrite(CH2_PIN, HIGH);
 

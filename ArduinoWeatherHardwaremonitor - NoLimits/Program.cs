@@ -17,7 +17,6 @@ namespace SerialSender
             WinAmp.SetupWinamp();
             
             Console.WriteLine(WinAmp.directoryPath);
-            
             Console.WriteLine(WinAmp.musicFolderPath);
 
 
