@@ -42,7 +42,7 @@ void loop()
     {
       colour = CRGB(red, green, blue);
       FastLED.clear();
-      for (int i = 0; i < NUM_LEDS; i++)
+      for (int i = 0; i < min(NUM_LEDS, HW_NUM_LEDS); i++)
       {
         leds[i] = colour;
       }
