@@ -52,27 +52,27 @@ void OnDataRecv(const uint8_t *mac, const uint8_t *incomingData, int len)
 
                 if (action == "ONA")
                 {
-                    sendNextionCommand("main." + SW + ".val=1");
-                    sendNextionCommand("main." + SW + ".bco2=1024");
-                    sendNextionCommand("main." + SW + "Val.val=1");
+                    queueNextionCommand("main." + SW + ".val=1");
+                    queueNextionCommand("main." + SW + ".bco2=1024");
+                    queueNextionCommand("main." + SW + "Val.val=1");
                 }
                 else if (action == "ONAB")
                 {
-                    sendNextionCommand("main." + SW + ".val=1");
-                    sendNextionCommand("main." + SW + ".bco2=1527");
-                    sendNextionCommand("main." + SW + "Val.val=2");
+                    queueNextionCommand("main." + SW + ".val=1");
+                    queueNextionCommand("main." + SW + ".bco2=1527");
+                    queueNextionCommand("main." + SW + "Val.val=2");
                 }
                 else if (action == "ONB")
                 {
-                    sendNextionCommand("main." + SW + ".val=1");
-                    sendNextionCommand("main." + SW + ".bco2=1048");
-                    sendNextionCommand("main." + SW + "Val.val=3");
+                    queueNextionCommand("main." + SW + ".val=1");
+                    queueNextionCommand("main." + SW + ".bco2=1048");
+                    queueNextionCommand("main." + SW + "Val.val=3");
                 }
                 else if (action == "OFF")
                 {
-                    sendNextionCommand("main." + SW + ".val=0");
-                    sendNextionCommand("main." + SW + ".bco2=1024");
-                    sendNextionCommand("main." + SW + "Val.val=0");
+                    queueNextionCommand("main." + SW + ".val=0");
+                    queueNextionCommand("main." + SW + ".bco2=1024");
+                    queueNextionCommand("main." + SW + "Val.val=0");
                 }
                 break;
             }

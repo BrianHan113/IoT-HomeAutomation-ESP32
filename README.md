@@ -243,8 +243,6 @@ Uses 2-channel low-level G3MB-202P solid state relays rated for loads of 2A 100-
 ## Known Issues
 * Camera capture is very slow, around 10-15 seconds just for a single still image, and during this all buttons are unresponsive. It "works", but is generally pretty unusable, and hence has been disabled. It can easily be enabled by uncommenting code in the setup() function in the main file of HW-Monitor and filling in secret files in the HW-Monitor and CAM projects for WiFi SSID and Password.
 * Tide data is also excluded in the simplified version, as the API used for the data (Stormglass.io) is unstable and could likely get rid of their free tier pricing. If stormglass is still free when reading this, or you have a paid api key, you can simply uncomment the task in the setup() function in the main file of HW-Monitor where the tasks are created, and provide your api key in the secret file in the ArduinoHardwareWeatherMonitor C# app.
-* Rarely in settings, one or two selection slides for esps will not update upon pressing SCANESPS. Just press SCANESPS again, and it should update.
-* Rarely a visual bug may happen where some switches may toggle on the wrong colour, even though the functionality is correct. E.g. motion sensor may trigger a switch to be ONB (Blue), but it shows ONA (green), but it still does actually trigger ONB as it was supposed to.  
 
 ## Thank You
 Alex Risos for supervising this project and always providing amazing guidance, help, and feedback. Definitely would not have been able to complete this project without his help.  

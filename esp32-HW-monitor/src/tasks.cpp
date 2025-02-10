@@ -1,11 +1,12 @@
 #include "tasks.h"
 
-extern SemaphoreHandle_t hardwareDataMutex;
+extern SemaphoreHandle_t hardwareDataSemaphore;
 extern SemaphoreHandle_t weatherBinSemaphore;
 extern SemaphoreHandle_t tideBinSemaphore;
 extern uint8_t receiverAddress[];
 extern HardwareSerial nextion;
 extern QueueHandle_t commandQueue;
+extern QueueHandle_t sendNextionQueue;
 extern std::vector<std::string> commandPrefixes;
 extern TaskHandle_t sendTempDataHandle;
 String hardwareData;
@@ -40,11 +41,10 @@ void receiveHardwareData(void *params)
             if (receivedData.startsWith("HARDWARE"))
             {
                 splicedData = receivedData.substring(8);
-                if (xSemaphoreTake(hardwareDataMutex, 0) == pdTRUE)
-                {
-                    hardwareData = splicedData;
-                    xSemaphoreGive(hardwareDataMutex);
-                }
+                hardwareData = splicedData;
+                // Give twice for both sendHardwareData and sendTempData tasks
+                xSemaphoreGive(hardwareDataSemaphore);
+                xSemaphoreGive(hardwareDataSemaphore);
             }
             else if (receivedData.startsWith("WEATHER"))
             {
@@ -52,7 +52,7 @@ void receiveHardwareData(void *params)
                 if (receivedData.startsWith("WEATHERLOCATION"))
                 {
                     String location = receivedData.substring(15);
-                    sendNextionCommand("main.locationText.txt=\"" + location + "\"");
+                    queueNextionCommand("main.locationText.txt=\"" + location + "\"");
                 }
                 else
                 {
@@ -72,6 +72,8 @@ void receiveHardwareData(void *params)
                 splicedData = receivedData.substring(11);
                 Serial.println(splicedData);
                 splicedData.replace("BREAK", "\\r");
+                // Cant queue music string as it may be too long to store
+                // Hence, this may not work sometimes, but it's a rare case, and users can easily just refresh again
                 sendNextionCommand("main.musicList.path=\"\""); // For Visual confirmation of refresh
                 sendNextionCommand("main.musicList.path=\"" + splicedData + "\"");
             }
@@ -89,35 +91,35 @@ void receiveHardwareData(void *params)
 
                         if (action == "ONA")
                         {
-                            sendNextionCommand("main." + SW + ".val=1");
-                            sendNextionCommand("main." + SW + ".bco2=1024");
-                            sendNextionCommand("main." + SW + "Val.val=1");
+                            queueNextionCommand("main." + SW + ".val=1");
+                            queueNextionCommand("main." + SW + ".bco2=1024");
+                            queueNextionCommand("main." + SW + "Val.val=1");
                         }
                         else if (action == "ONAB")
                         {
-                            sendNextionCommand("main." + SW + ".val=1");
-                            sendNextionCommand("main." + SW + ".bco2=1527");
-                            sendNextionCommand("main." + SW + "Val.val=2");
+                            queueNextionCommand("main." + SW + ".val=1");
+                            queueNextionCommand("main." + SW + ".bco2=1527");
+                            queueNextionCommand("main." + SW + "Val.val=2");
                         }
                         else if (action == "ONB")
                         {
-                            sendNextionCommand("main." + SW + ".val=1");
-                            sendNextionCommand("main." + SW + ".bco2=1048");
-                            sendNextionCommand("main." + SW + "Val.val=3");
+                            queueNextionCommand("main." + SW + ".val=1");
+                            queueNextionCommand("main." + SW + ".bco2=1048");
+                            queueNextionCommand("main." + SW + "Val.val=3");
                         }
                         else if (action == "OFF")
                         {
-                            sendNextionCommand("main." + SW + ".val=0");
-                            sendNextionCommand("main." + SW + ".bco2=1024");
-                            sendNextionCommand("main." + SW + "Val.val=0");
+                            queueNextionCommand("main." + SW + ".val=0");
+                            queueNextionCommand("main." + SW + ".bco2=1024");
+                            queueNextionCommand("main." + SW + "Val.val=0");
                         }
                         else if (action == "ENABLE")
                         {
-                            sendNextionCommand("main." + SW + ".val=1");
+                            queueNextionCommand("main." + SW + ".val=1");
                         }
                         else if (action == "DISABLE")
                         {
-                            sendNextionCommand("main." + SW + ".val=0");
+                            queueNextionCommand("main." + SW + ".val=0");
                         }
                         break;
                     }
@@ -210,11 +212,11 @@ void receiveNextionSerial(void *params)
 
                 if (xQueueSend(commandQueue, &buffer, 0) != pdTRUE)
                 {
-                    Serial.println("Queue full");
+                    Serial.println("From receiveNextionSerial: Queue full");
                 }
                 else
                 {
-                    Serial.println(buffer);
+                    Serial.println("From receieveNextionSerial: " + String(buffer));
                 }
 
                 bufferIndex = 0;
@@ -239,6 +241,27 @@ void receiveNextionSerial(void *params)
     }
 }
 
+void sendNextionSerial(void *pvParameters)
+{
+    char command[100];
+
+    while (true)
+    {
+        if (xQueueReceive(sendNextionQueue, &command, portMAX_DELAY) != pdTRUE)
+        {
+            Serial.println("Nothing in queue");
+            return;
+        }
+
+        // Serial.println("Sending to Nextion: " + String(command));
+        nextion.print(String(command));
+        nextion.write(0xFF);
+        nextion.write(0xFF);
+        nextion.write(0xFF);
+        vTaskDelay(50 / portTICK_PERIOD_MS);
+    }
+}
+
 void executeCommands(void *params)
 {
 
@@ -255,7 +278,6 @@ void executeCommands(void *params)
             return;
         }
 
-        // Serial.println(command);
         String commandString = (String)command;
 
         if (commandString == "RESETSETTINGS")
@@ -286,7 +308,7 @@ void executeCommands(void *params)
 
             for (int i = 0; i <= 19; i++) // 19 total select esp dropdowns on nextion
             {
-                sendNextionCommand("select" + String(i) + ".path=\"" + multilineString + "\"");
+                queueNextionCommand("select" + String(i) + ".path=\"" + multilineString + "\"");
             }
 
             String selectedEspsString = commandString.substring(8);
@@ -309,7 +331,7 @@ void executeCommands(void *params)
 
                 if (deviceMACMap.find(espId) == deviceMACMap.end()) // espId not found in new deviceMacMap
                 {
-                    sendNextionCommand(selected + ".txt=\"Select Esp\"");
+                    queueNextionCommand(selected + ".txt=\"Select Esp\"");
                 }
 
                 startIndex = breakIndex + 5;
@@ -558,7 +580,7 @@ void executeCommands(void *params)
             {
                 String currentTemp = withoutSensor.substring(11);
                 Serial.println("Current Temp: " + currentTemp);
-                sendNextionCommand("main.tempSensorText.txt=\"" + currentTemp + "\"");
+                queueNextionCommand("main.tempSensorText.txt=\"" + currentTemp + "\"");
             }
         }
 
@@ -587,10 +609,9 @@ void sendHardwareData(void *params)
         // UBaseType_t stackLeft = uxTaskGetStackHighWaterMark(NULL);
         // Serial.println("Stack sendHWdata: " + String(stackLeft));
 
-        if (xSemaphoreTake(hardwareDataMutex, portMAX_DELAY) == pdTRUE)
+        if (xSemaphoreTake(hardwareDataSemaphore, portMAX_DELAY) == pdTRUE)
         {
             error = deserializeJson(doc, hardwareData);
-            xSemaphoreGive(hardwareDataMutex);
         }
 
         if (!error)
@@ -650,10 +671,10 @@ void sendHardwareData(void *params)
 
         ramPercentage = (int)((ramUsed / (ramUsed + ramAvail)) * 100);
 
-        sendNextionCommand("main.cpuTemp.val=" + String((int)cpuPackageTemp));
-        sendNextionCommand("main.gpuTemp.val=" + String((int)gpuTemp));
-        sendNextionCommand("main.ramUsage.val=" + String((int)ramPercentage));
-        sendNextionCommand("main.powerUsage.val=" + String((int)totalPower));
+        queueNextionCommand("main.cpuTemp.val=" + String((int)cpuPackageTemp));
+        queueNextionCommand("main.gpuTemp.val=" + String((int)gpuTemp));
+        queueNextionCommand("main.ramUsage.val=" + String((int)ramPercentage));
+        queueNextionCommand("main.powerUsage.val=" + String((int)totalPower));
 
         vTaskDelay(100 / portTICK_PERIOD_MS);
     }
@@ -715,11 +736,11 @@ void sendWeatherData(void *params)
             deltaLabel = String(forecast.delta) + "h";
         }
 
-        sendNextionCommand("main.wPic" + String(forecast.id) + ".pic=" + String(weatherImageID));
-        sendNextionCommand("main.wTitle" + String(forecast.id) + ".txt=\"" + deltaLabel + "\"");
-        sendNextionCommand("main.wTemp" + String(forecast.id) + ".txt=\"" + String((int)round(forecast.temp)) + "\"");
-        sendNextionCommand("main.wRain" + String(forecast.id) + ".pic=" + String(weatherRainID));
-        sendNextionCommand("main.wBarb" + String(forecast.id) + ".pic=" + String(weatherBarbID));
+        queueNextionCommand("main.wPic" + String(forecast.id) + ".pic=" + String(weatherImageID));
+        queueNextionCommand("main.wTitle" + String(forecast.id) + ".txt=\"" + deltaLabel + "\"");
+        queueNextionCommand("main.wTemp" + String(forecast.id) + ".txt=\"" + String((int)round(forecast.temp)) + "\"");
+        queueNextionCommand("main.wRain" + String(forecast.id) + ".pic=" + String(weatherRainID));
+        queueNextionCommand("main.wBarb" + String(forecast.id) + ".pic=" + String(weatherBarbID));
 
         vTaskDelay(50 / portTICK_PERIOD_MS);
     }
@@ -797,19 +818,19 @@ void sendTideData(void *params)
         Serial.println("Current X: " + String(currentX));
         Serial.println("Current Y: " + String(currentY));
 
-        sendNextionCommand("main.currentTide.x=" + String(currentX));
-        sendNextionCommand("main.currentTide.y=" + String(currentY));
+        queueNextionCommand("main.currentTide.x=" + String(currentX));
+        queueNextionCommand("main.currentTide.y=" + String(currentY));
 
         String high1HeightString = String(round(high1Height * 100.0) / 100.0);
         String lowHeightString = String(round(lowHeight * 100.0) / 100.0);
         String high2HeightString = String(round(high2Height * 100.0) / 100.0);
 
-        sendNextionCommand("main.high1Time.txt=\"" + high1Time + "\"");
-        sendNextionCommand("main.lowTime.txt=\"" + lowTime + "\"");
-        sendNextionCommand("main.high2Time.txt=\"" + high2Time + "\"");
-        sendNextionCommand("main.high1Height.txt=\"" + high1HeightString + "m\"");
-        sendNextionCommand("main.lowHeight.txt=\"" + lowHeightString + "m\"");
-        sendNextionCommand("main.high2Height.txt=\"" + high2HeightString + "m\"");
+        queueNextionCommand("main.high1Time.txt=\"" + high1Time + "\"");
+        queueNextionCommand("main.lowTime.txt=\"" + lowTime + "\"");
+        queueNextionCommand("main.high2Time.txt=\"" + high2Time + "\"");
+        queueNextionCommand("main.high1Height.txt=\"" + high1HeightString + "m\"");
+        queueNextionCommand("main.lowHeight.txt=\"" + lowHeightString + "m\"");
+        queueNextionCommand("main.high2Height.txt=\"" + high2HeightString + "m\"");
 
         vTaskDelay(5000 / portTICK_PERIOD_MS);
     }
@@ -829,10 +850,9 @@ void sendTempData(void *params)
         // UBaseType_t stackLeft = uxTaskGetStackHighWaterMark(NULL);
         // Serial.println("Stack sendTempdata: " + String(stackLeft));
 
-        if (xSemaphoreTake(hardwareDataMutex, portMAX_DELAY) == pdTRUE)
+        if (xSemaphoreTake(hardwareDataSemaphore, portMAX_DELAY) == pdTRUE)
         {
             error = deserializeJson(doc, hardwareData);
-            xSemaphoreGive(hardwareDataMutex);
         }
 
         if (!error)

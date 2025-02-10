@@ -18,12 +18,13 @@
 
 HardwareSerial nextion(2);
 
-SemaphoreHandle_t hardwareDataMutex;
+SemaphoreHandle_t hardwareDataSemaphore;
 SemaphoreHandle_t weatherBinSemaphore;
 SemaphoreHandle_t tideBinSemaphore;
 QueueHandle_t commandQueue;
+QueueHandle_t sendNextionQueue;
 const uint8_t COMMAND_QUEUE_LEN = 10;
-const uint8_t DATA_QUEUE_LEN = 1;
+const uint8_t SEND_NEXTION_QUEUE_LEN = 50;
 TaskHandle_t sendTempDataHandle = NULL;
 
 void setup()
@@ -67,18 +68,20 @@ void setup()
   esp_now_register_recv_cb(OnDataRecv);
   espNowAddReceiver(broadcastAddress);
 
-  hardwareDataMutex = xSemaphoreCreateMutex();
+  hardwareDataSemaphore = xSemaphoreCreateCounting(2, 0); // 2 slots for sendHardwareData and sendTempData
   weatherBinSemaphore = xSemaphoreCreateBinary();
   tideBinSemaphore = xSemaphoreCreateBinary();
   commandQueue = xQueueCreate(COMMAND_QUEUE_LEN, sizeof(char[500]));
+  sendNextionQueue = xQueueCreate(SEND_NEXTION_QUEUE_LEN, sizeof(char[100]));
 
-  xTaskCreatePinnedToCore(receiveHardwareData, "Recieve Hardware Data from c# app", 32768, NULL, 2, NULL, PRO_CPU_NUM);
-  xTaskCreatePinnedToCore(sendHardwareData, "Send Hardware Data to nextion", 32768, NULL, 1, NULL, APP_CPU_NUM);
-  xTaskCreatePinnedToCore(sendWeatherData, "Send Weather Data to nextion", 32768, NULL, 1, NULL, APP_CPU_NUM);
+  xTaskCreatePinnedToCore(receiveHardwareData, "Recieve Hardware Data from c# app", 16384, NULL, 2, NULL, PRO_CPU_NUM);
+  xTaskCreatePinnedToCore(sendNextionSerial, "Send commands to nextion", 16384, NULL, 1, NULL, APP_CPU_NUM);
+  xTaskCreatePinnedToCore(sendHardwareData, "Send Hardware Data to nextion", 16384, NULL, 1, NULL, APP_CPU_NUM);
+  xTaskCreatePinnedToCore(sendWeatherData, "Send Weather Data to nextion", 16384, NULL, 1, NULL, APP_CPU_NUM);
   // Uncomment to enable tide data transfer - see README
-  // xTaskCreatePinnedToCore(sendTideData, "Send Tide Data to nextion", 32768, NULL, 1, NULL, APP_CPU_NUM);
-  xTaskCreatePinnedToCore(receiveNextionSerial, "Receive data from nextion", 65536, NULL, 2, NULL, APP_CPU_NUM);
-  xTaskCreatePinnedToCore(executeCommands, "Execute nextion commands", 65536, NULL, 1, NULL, APP_CPU_NUM);
+  // xTaskCreatePinnedToCore(sendTideData, "Send Tide Data to nextion", 16384, NULL, 1, NULL, APP_CPU_NUM);
+  xTaskCreatePinnedToCore(receiveNextionSerial, "Receive data from nextion", 16384, NULL, 2, NULL, APP_CPU_NUM);
+  xTaskCreatePinnedToCore(executeCommands, "Execute nextion commands", 16384, NULL, 2, NULL, APP_CPU_NUM);
   xTaskCreatePinnedToCore(sendTempData, "Send Hardware temperature data", 2048, NULL, 1, &sendTempDataHandle, APP_CPU_NUM);
   vTaskSuspend(sendTempDataHandle);
 

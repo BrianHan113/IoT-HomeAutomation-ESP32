@@ -17,5 +17,6 @@ void sendTempData(void *params);
 void receiveNextionSerial(void *params);
 void executeCommands(void *params);
 void sendTideData(void *params);
+void sendNextionSerial(void *pvParameters);
 
 #endif

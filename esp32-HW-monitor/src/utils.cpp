@@ -1,11 +1,20 @@
 #include "utils.h"
 
 extern HardwareSerial nextion;
+extern QueueHandle_t sendNextionQueue;
+
+void queueNextionCommand(String command)
+{
+    if (xQueueSend(sendNextionQueue, command.c_str(), 0) != pdTRUE)
+    {
+        Serial.println("Queue Full, Send Nextion Command Dropped!");
+    }
+}
 
 void sendNextionCommand(String command)
 {
-    nextion.print(command); // Send command
-    nextion.write(0xFF);    // Send termination bytes
+    nextion.print(command);
+    nextion.write(0xFF);
     nextion.write(0xFF);
     nextion.write(0xFF);
 }
@@ -37,7 +46,7 @@ void nextionWaveformYAxisScale(int min, int max, String waveformID)
     int step = (max - min) / 5;
     for (int i = 0; i <= 5; i++)
     {
-        sendNextionCommand(waveformID + i + ".txt=\"" + currVal + "\"");
+        queueNextionCommand(waveformID + i + ".txt=\"" + currVal + "\"");
         currVal += step;
     }
 }

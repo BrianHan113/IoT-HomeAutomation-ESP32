@@ -129,7 +129,7 @@ void uploadCamCaptureToNextion(String camServer, String camId)
     {
         sendJpg(("/" + camId + ".jpg").c_str(), camId);
         vTaskDelay(2000 / portTICK_PERIOD_MS);
-        sendNextionCommand("main." + camId + ".path=\"sd0/" + camId + ".jpg\"");
+        queueNextionCommand("main." + camId + ".path=\"sd0/" + camId + ".jpg\"");
         deleteCapturedImage(("/" + camId + ".jpg").c_str());
     }
 }
