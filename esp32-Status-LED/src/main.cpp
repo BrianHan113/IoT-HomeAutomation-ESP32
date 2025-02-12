@@ -8,8 +8,8 @@
 String EspID = "STATUS_LED";
 CRGB leds[HW_NUM_LEDS];
 
-float hue = 213;
-
+float hue = 213;      // Initial purple colour, will change when gpu temp is received
+int brightness = 128; // Start 50% brightness to match nextion gui
 int NUM_LEDS = -1;
 bool isStripOn = false;
 
@@ -30,12 +30,12 @@ void setup()
 
 void loop()
 {
-
-  if (NUM_LEDS != -1)
+  if (NUM_LEDS > 0) // check NUM_LEDS is configured in nextion settings
   {
     if (isStripOn)
     {
       FastLED.clear();
+      FastLED.setBrightness(brightness);
       for (int i = 0; i < min(NUM_LEDS, HW_NUM_LEDS); i++)
       {
         leds[i] = CHSV((uint8_t)hue, 255, 255);
@@ -48,16 +48,5 @@ void loop()
     FastLED.show();
   }
 
-  vTaskDelay(500 / portTICK_PERIOD_MS);
+  vTaskDelay(100 / portTICK_PERIOD_MS);
 }
-
-// uint8_t r, g, b;
-// r = (colour >> 11) & 0x1F; // Red: 5 bits
-// g = (colour >> 5) & 0x3F;  // Green: 6 bits
-// b = colour & 0x1F;         // Blue: 5 bits
-
-// // Scale to 8 bits (0–255)
-// r = (r * 255) / 31; // Scale 5-bit to 8-bit
-// g = (g * 255) / 63; // Scale 6-bit to 8-bit
-// b = (b * 255) / 31;
-// leds[1] = CRGB(g, r, b);

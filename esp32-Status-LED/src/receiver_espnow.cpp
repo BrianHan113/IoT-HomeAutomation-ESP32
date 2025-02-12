@@ -9,6 +9,7 @@ extern uint8_t blue;
 extern bool isStripOn;
 extern int NUM_LEDS;
 extern float hue;
+extern int brightness;
 
 void espNowAddReceiver(const uint8_t *receiver)
 {
@@ -69,6 +70,10 @@ void OnDataRecv(const uint8_t *mac, const uint8_t *incomingData, int len)
 
         // map(value, fromLow, fromHigh, toLow, toHigh) -> rescales our gpu temp to 160-0 scale
         hue = map(clampedTemp, 30, 100, 128, 0);
+    }
+    else if (String(receivedData).startsWith("BRIGHTNESS"))
+    {
+        brightness = String(receivedData).substring(10).toInt();
     }
 }
 

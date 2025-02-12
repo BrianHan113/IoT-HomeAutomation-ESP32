@@ -449,6 +449,13 @@ void executeCommands(void *params)
 
                 sendCommandToDevice(dataToSendString, statusLedDevice);
             }
+            else if (withoutCommand.startsWith("BRIGHTNESSNUMS"))
+            {
+                uint32_t numData = nextionNumConvert(14, withoutCommand.length() - 4, withoutCommand);
+                String dataToSendString = "BRIGHTNESS" + String(numData);
+                Serial.println(dataToSendString);
+                sendCommandToDevice(dataToSendString, statusLedDevice);
+            }
         }
         else if (commandString.startsWith("PLAYMUSIC"))
         {
