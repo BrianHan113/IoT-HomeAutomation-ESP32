@@ -201,9 +201,11 @@ Uses a WS2815 12V LED Strip with primary data line connected to pin 26 on a esp3
     <ol>
       <li><strong>Select ESP</strong>: The device that is connected to the LED Strip</li>
       <li><strong>NUM LEDS</strong>: How many LEDs to show.</li>
-      <li><strong>Turn On</strong>: Apply the settings first, then turn the strip on and off using the slider.</li>
+      <li><strong>Turn On</strong>: Apply the settings first, then turn the strip on and off using the switch.</li>
+      <li><strong>Brightness</strong>: Use the slider to change the brightness of the LED strip.</li>
     </ol>
-    <p>Currently, the status LED strip just reports the GPU temperature scaled from 30 to 100 degrees celcius to the CHSV colour scale, where 100C is red, and 30C is aqua, with everything else in between. You can easily modify this and add more LEDs based on what else you want to report.</p>
+    <p>Currently, the status LED strip just reports the GPU temperature scaled from 30 to 100 degrees celcius to the CHSV colour scale, where 100C is red, and 30C is aqua, with everything else in between. You can modify this in the sendTempData task in HW-monitor, and the receiver_espnow in Status-LED to add whatever else you want it to report.</p>
+    <p>Also note that the ON/OFF switch and the brightness slider do not require hitting <strong>APPLY</strong> to take action.</p>
   </div></td>
     <td align="center"><div style="align-items: center;">
   <div>

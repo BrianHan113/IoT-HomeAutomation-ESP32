@@ -16,13 +16,10 @@ String channel = "";
 
 boolean pirState;
 boolean motionDetected = false;
-
-// FreeRTOS Timer handle
 TimerHandle_t turnOffTimer = NULL;
 
 void turnSwitchOff(TimerHandle_t xTimer)
 {
-
   if (!isEnabled)
   {
     Serial.println("Tried to turn off but Motion Sensor not enabled");
@@ -139,5 +136,4 @@ void setup()
 
 void loop()
 {
-  // The loop is empty because we're using FreeRTOS tasks
 }

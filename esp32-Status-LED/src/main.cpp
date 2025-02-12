@@ -2,7 +2,7 @@
 #include <FastLED.h>
 #include <receiver_espnow.h>
 
-#define HW_NUM_LEDS 19
+#define HW_NUM_LEDS 19 // Number of LEDs in the strip, change this to your strip length
 #define DATA_PIN 26
 
 String EspID = "STATUS_LED";
@@ -23,7 +23,7 @@ void setup()
 
   esp_now_register_send_cb(OnDataSent);
   esp_now_register_recv_cb(OnDataRecv);
-
+  // FastLED supports many other LED Strips, enter your own here
   FastLED.addLeds<WS2815, DATA_PIN, RGB>(leds, HW_NUM_LEDS);
   FastLED.clear();
 }

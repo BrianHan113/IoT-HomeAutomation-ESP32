@@ -73,8 +73,8 @@ void OnDataRecv(const uint8_t *mac, const uint8_t *incomingData, int len)
         if (turnOffTimer != NULL)
         {
             // Stop and delete the FreeRTOS timer
-            xTimerStop(turnOffTimer, 0);   // 0 is the block time (non-blocking)
-            xTimerDelete(turnOffTimer, 0); // 0 is the block time (non-blocking)
+            xTimerStop(turnOffTimer, 0);
+            xTimerDelete(turnOffTimer, 0);
             turnOffTimer = NULL;
         }
     }
