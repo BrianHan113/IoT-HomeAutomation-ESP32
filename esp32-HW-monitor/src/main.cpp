@@ -25,6 +25,15 @@ QueueHandle_t commandQueue;
 QueueHandle_t sendNextionQueue;
 const uint8_t COMMAND_QUEUE_LEN = 10;
 const uint8_t SEND_NEXTION_QUEUE_LEN = 50;
+
+// All task handles
+TaskHandle_t receiveHardwareDataHandle = NULL;
+TaskHandle_t sendNextionSerialHandle = NULL;
+TaskHandle_t sendHardwareDataHandle = NULL;
+TaskHandle_t sendWeatherDataHandle = NULL;
+TaskHandle_t sendTideDataHandle = NULL;
+TaskHandle_t receiveNextionSerialHandle = NULL;
+TaskHandle_t executeCommandsHandle = NULL;
 TaskHandle_t sendTempDataHandle = NULL;
 
 void setup()
@@ -74,14 +83,14 @@ void setup()
   commandQueue = xQueueCreate(COMMAND_QUEUE_LEN, sizeof(char[500]));
   sendNextionQueue = xQueueCreate(SEND_NEXTION_QUEUE_LEN, sizeof(char[100]));
 
-  xTaskCreatePinnedToCore(receiveHardwareData, "Recieve Hardware Data from c# app", 16384, NULL, 2, NULL, PRO_CPU_NUM);
-  xTaskCreatePinnedToCore(sendNextionSerial, "Send commands to nextion", 16384, NULL, 1, NULL, APP_CPU_NUM);
-  xTaskCreatePinnedToCore(sendHardwareData, "Send Hardware Data to nextion", 16384, NULL, 1, NULL, APP_CPU_NUM);
-  xTaskCreatePinnedToCore(sendWeatherData, "Send Weather Data to nextion", 16384, NULL, 1, NULL, APP_CPU_NUM);
+  xTaskCreatePinnedToCore(receiveHardwareData, "Recieve Hardware Data from c# app", 16384, NULL, 2, &receiveHardwareDataHandle, PRO_CPU_NUM);
+  xTaskCreatePinnedToCore(sendNextionSerial, "Send commands to nextion", 16384, NULL, 1, &sendNextionSerialHandle, APP_CPU_NUM);
+  xTaskCreatePinnedToCore(sendHardwareData, "Send Hardware Data to nextion", 16384, NULL, 1, &sendHardwareDataHandle, APP_CPU_NUM);
+  xTaskCreatePinnedToCore(sendWeatherData, "Send Weather Data to nextion", 16384, NULL, 1, &sendWeatherDataHandle, APP_CPU_NUM);
   // Uncomment to enable tide data transfer - see README
   // xTaskCreatePinnedToCore(sendTideData, "Send Tide Data to nextion", 16384, NULL, 1, NULL, APP_CPU_NUM);
-  xTaskCreatePinnedToCore(receiveNextionSerial, "Receive data from nextion", 16384, NULL, 2, NULL, APP_CPU_NUM);
-  xTaskCreatePinnedToCore(executeCommands, "Execute nextion commands", 16384, NULL, 2, NULL, APP_CPU_NUM);
+  xTaskCreatePinnedToCore(receiveNextionSerial, "Receive data from nextion", 16384, NULL, 2, &receiveNextionSerialHandle, APP_CPU_NUM);
+  xTaskCreatePinnedToCore(executeCommands, "Execute nextion commands", 16384, NULL, 2, &executeCommandsHandle, APP_CPU_NUM);
   xTaskCreatePinnedToCore(sendTempData, "Send Hardware temperature data", 2048, NULL, 1, &sendTempDataHandle, APP_CPU_NUM);
   vTaskSuspend(sendTempDataHandle);
 
@@ -93,9 +102,25 @@ void setup()
 
 void loop()
 {
-  Serial.println("------------Main Loop------------");
+  Serial.println("------------Memory Metrics------------");
   Serial.println("Free Heap: " + String(ESP.getFreeHeap()));
   UBaseType_t stackLeft = uxTaskGetStackHighWaterMark(NULL);
-  Serial.println("Stack Loop: " + String(stackLeft));
+  Serial.println("Main stack: " + String(stackLeft));
+  stackLeft = uxTaskGetStackHighWaterMark(receiveHardwareDataHandle);
+  Serial.println("receiveHardwareData stack: " + String(stackLeft));
+  stackLeft = uxTaskGetStackHighWaterMark(sendNextionSerialHandle);
+  Serial.println("sendNextionSerial stack: " + String(stackLeft));
+  stackLeft = uxTaskGetStackHighWaterMark(sendHardwareDataHandle);
+  Serial.println("ssendHardwareData stack: " + String(stackLeft));
+  stackLeft = uxTaskGetStackHighWaterMark(sendWeatherDataHandle);
+  Serial.println("sendWeatherData stack: " + String(stackLeft));
+  stackLeft = uxTaskGetStackHighWaterMark(receiveNextionSerialHandle);
+  Serial.println("receiveNextionSerial stack: " + String(stackLeft));
+  stackLeft = uxTaskGetStackHighWaterMark(executeCommandsHandle);
+  Serial.println("executeCommands stack: " + String(stackLeft));
+  stackLeft = uxTaskGetStackHighWaterMark(sendTempDataHandle);
+  Serial.println("sendTempData stack: " + String(stackLeft));
+  Serial.println("--------------------------------------");
+
   vTaskDelay(2000 / portTICK_PERIOD_MS);
 }
