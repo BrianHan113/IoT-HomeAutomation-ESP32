@@ -1,7 +1,7 @@
 #include "addresses_helper.h"
 
-std::map<String, std::array<uint8_t, 6>> deviceMACMap; // Maps EspID to MAC Address
-const uint8_t broadcastAddress[] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
+std::map<String, std::array<uint8_t, 6>> deviceMACMap;                   // Saves EspIDs to MAC Address, e.g. "LIGHT1" -> {0x12, 0x34, 0x56, 0x78, 0x90, 0xAB}
+const uint8_t broadcastAddress[] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF}; // Special MAC address to send to all nearby ESPs
 const String switches[] = {
     "SW1",
     "SW2",
@@ -13,9 +13,9 @@ const String switches[] = {
     "SW8",
     "TEMPSENSOR",
     "MOTIONSENSOR",
-}; // Available options on nextion settings page
+}; // All available selection options on nextion settings page
 
-// Sensor and peripheral links
+// Sensor and peripheral devices
 String tempSensorDevice = "";
 String tempSensorSwitch = "";
 String motionSensorDevice = "";
@@ -23,23 +23,10 @@ String motionSensorSwitch = "";
 String ledStripDevice = "";
 String statusLedDevice = "";
 
-const int numSwitches = sizeof(switches) / sizeof(switches[0]);
+const int numSwitches = sizeof(switches) / sizeof(switches[0]); // Handy for iterating over all switches in for-loop
+std::map<String, std::vector<String>> switchDeviceMap;          // Saves switches to all linked EspIDs, e.g. "SW1" -> {"LIGHT1", "LIGHT2"}
 
-std::map<String, std::vector<String>> switchDeviceMap; // Maps settings switch to a Device
-
-void displayMacAddress(std::array<uint8_t, 6> macValue)
-{
-    for (size_t i = 0; i < macValue.size(); i++)
-    {
-        if (i > 0)
-        {
-            Serial.print(":");
-        }
-        Serial.print(macValue[i], HEX);
-    }
-    Serial.println();
-}
-
+// Send a message to all ESPs telling them to send their EspIDs, and their MAC addresses
 void getMacAddresses()
 {
     deviceMACMap.clear();
@@ -54,6 +41,20 @@ void getMacAddresses()
     {
         Serial.println("No ESPS powered/detected");
     }
+}
+
+// Helper debugging functions
+void displayMacAddress(std::array<uint8_t, 6> macValue)
+{
+    for (size_t i = 0; i < macValue.size(); i++)
+    {
+        if (i > 0)
+        {
+            Serial.print(":");
+        }
+        Serial.print(macValue[i], HEX);
+    }
+    Serial.println();
 }
 
 void displaySwitchDeviceMap()

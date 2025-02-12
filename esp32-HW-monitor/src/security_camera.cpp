@@ -2,7 +2,7 @@
 
 extern HardwareSerial nextion;
 
-const String cam1ServerUrl = "http://esp32cam1.local/capture";
+const String cam1ServerUrl = "http://esp32cam1.local/capture"; // URLs made in the ESP32-CAM's source code
 const String cam2ServerUrl = "http://esp32cam2.local/capture";
 
 // Follows sending file instructions from Nextion's instruction set documentation
@@ -32,9 +32,10 @@ void sendJpg(const char *filePath, String camId)
     }
 
     size_t fileSize = file.size();
-    nextion.printf("twfile \"sd0/%s.jpg\",%d\xFF\xFF\xFF", camId.c_str(), fileSize);
-    vTaskDelay(2000 / portTICK_PERIOD_MS);
+    nextion.printf("twfile \"sd0/%s.jpg\",%d\xFF\xFF\xFF", camId.c_str(), fileSize); // Initialize file transfer
+    vTaskDelay(2000 / portTICK_PERIOD_MS);                                           // Delay for Nextion to process the command
 
+    // Send the image in chunks
     uint8_t buffer[4096];
     size_t bytesSent = 0;
     uint16_t packetID = 0;

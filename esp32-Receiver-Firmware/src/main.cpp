@@ -1,8 +1,10 @@
 #include <Arduino.h>
 #include <receiver_espnow.h>
 
-#define LED 2
+#define LED 2 // Builtin LED (could be different depending on your board)
 
+// Enter any ID e.g. "Livingroom lights", but make sure it is unique.
+// It will appear on the settings page at any "select esp" dropdown
 String EspID = "ENTER_ID_HERE";
 
 void setup()

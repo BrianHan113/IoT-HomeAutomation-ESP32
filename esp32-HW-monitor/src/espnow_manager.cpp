@@ -1,4 +1,5 @@
 #include "espnow_manager.h"
+
 extern QueueHandle_t commandQueue;
 extern HardwareSerial nextion;
 
@@ -29,6 +30,7 @@ void OnDataRecv(const uint8_t *mac, const uint8_t *incomingData, int len)
     char receivedData[32];
     memcpy(&receivedData, incomingData, sizeof(receivedData));
 
+    // MACSEND header is sent by receiver ESPs when SCANESPS button is pressed
     if (strncmp(receivedData, "MACSEND", strlen("MACSEND")) == 0)
     {
         String receivedString = String(receivedData);
@@ -36,13 +38,13 @@ void OnDataRecv(const uint8_t *mac, const uint8_t *incomingData, int len)
 
         std::array<uint8_t, 6> macValue;
         memcpy(macValue.data(), mac, 6);
-        deviceMACMap[id] = macValue;
-        espNowAddReceiver(macValue.data());
+        deviceMACMap[id] = macValue;        // Save the EspID and MAC to deviceMACMap
+        espNowAddReceiver(macValue.data()); // Pair the receiver ESP
     }
-    else // Used to push commands sent by eps-now from sensors to commandQueue, ie SW1OFF
+    else // All other received data will be commands sent by receiver ESPs (ie SW1OFF)
     {
         String receivedString = String(receivedData);
-        for (int i = 0; i < numSwitches; i++)
+        for (int i = 0; i < numSwitches; i++) // Find the switch that the command is for
         {
             String currentSwitch = (String)switches[i];
             if (receivedString.startsWith(currentSwitch))
@@ -50,6 +52,7 @@ void OnDataRecv(const uint8_t *mac, const uint8_t *incomingData, int len)
                 String SW = currentSwitch;
                 String action = receivedString.substring(SW.length());
 
+                // Update the GUI on Nextion main screen based on the action
                 if (action == "ONA")
                 {
                     queueNextionCommand("main." + SW + ".val=1");
@@ -77,6 +80,7 @@ void OnDataRecv(const uint8_t *mac, const uint8_t *incomingData, int len)
                 break;
             }
         }
+        // Push the command to commandQueue for executeCommands Task to handle
         if (xQueueSend(commandQueue, &receivedData, 0) != pdTRUE)
         {
             Serial.println("Queue full");

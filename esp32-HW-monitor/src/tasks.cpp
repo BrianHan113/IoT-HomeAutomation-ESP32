@@ -15,6 +15,7 @@ String tideData;
 
 const int BUFFER_SIZE = 500;
 
+// Handle data sent by serial from the c# desktop app
 void receiveHardwareData(void *params)
 {
 
@@ -36,48 +37,47 @@ void receiveHardwareData(void *params)
 
         if (Serial0.available() > 0)
         {
-            receivedData = Serial0.readStringUntil(0x03);
+            receivedData = Serial0.readStringUntil(0x03); // 0x03 is the termination character
 
-            if (receivedData.startsWith("HARDWARE"))
+            if (receivedData.startsWith("HARDWARE")) // CPU, GPU, RAM, Power data
             {
                 splicedData = receivedData.substring(8);
                 hardwareData = splicedData;
-                // Give twice for both sendHardwareData and sendTempData tasks
+                // Give twice so both sendHardwareData and sendTempData tasks can use the data
                 xSemaphoreGive(hardwareDataSemaphore);
                 xSemaphoreGive(hardwareDataSemaphore);
             }
             else if (receivedData.startsWith("WEATHER"))
             {
-
-                if (receivedData.startsWith("WEATHERLOCATION"))
+                if (receivedData.startsWith("WEATHERLOCATION")) // Lat, Long datas
                 {
                     String location = receivedData.substring(15);
                     queueNextionCommand("main.locationText.txt=\"" + location + "\"");
                 }
                 else
                 {
-                    splicedData = receivedData.substring(7);
+                    splicedData = receivedData.substring(7); // Weather forecast data
                     weatherData = splicedData;
                     xSemaphoreGive(weatherBinSemaphore);
                 }
             }
-            else if (receivedData.startsWith("TIDE"))
+            else if (receivedData.startsWith("TIDE")) // Low High tide data, and current time data
             {
                 splicedData = receivedData.substring(4);
                 tideData = splicedData;
                 xSemaphoreGive(tideBinSemaphore);
             }
-            else if (receivedData.startsWith("MUSICSTRING"))
+            else if (receivedData.startsWith("MUSICSTRING")) // Framed string of all songs in the selected music folder
             {
                 splicedData = receivedData.substring(11);
                 Serial.println(splicedData);
                 splicedData.replace("BREAK", "\\r");
                 // Cant queue music string as it may be too long to store
                 // Hence, this may not work sometimes, but it's a rare case, and users can easily just refresh again
-                sendNextionCommand("main.musicList.path=\"\""); // For Visual confirmation of refresh
+                sendNextionCommand("main.musicList.path=\"\""); // Make it blank For Visual confirmation of refresh
                 sendNextionCommand("main.musicList.path=\"" + splicedData + "\"");
             }
-            else if (receivedData.startsWith("SCHEDULE"))
+            else if (receivedData.startsWith("SCHEDULE")) // Commands requested by the c# scheduler
             {
                 String receivedString = receivedData.substring(8);
                 // Serial.println("Testing: " + receivedString);
@@ -89,6 +89,7 @@ void receiveHardwareData(void *params)
                         String SW = currentSwitch;
                         String action = receivedString.substring(SW.length());
 
+                        // Update GUI on nextion main screen based on the action, this is just visual, the actual action is handled by the executeCommands task
                         if (action == "ONA")
                         {
                             queueNextionCommand("main." + SW + ".val=1");
@@ -124,6 +125,7 @@ void receiveHardwareData(void *params)
                         break;
                     }
                 }
+                // Push the command to commandQueue for executeCommands Task to handle
                 if (xQueueSend(commandQueue, receivedString.c_str(), 0) != pdTRUE)
                 {
                     Serial.println("Queue full");
@@ -134,6 +136,7 @@ void receiveHardwareData(void *params)
     }
 }
 
+// Handle commands sent by the nextion display
 void receiveNextionSerial(void *params)
 {
 
@@ -165,7 +168,7 @@ void receiveNextionSerial(void *params)
             uint8_t byteReceived = nextion.read();
             if (!isProcessingNum)
             {
-                if ((byteReceived < 0x21 || byteReceived > 0x7E) && byteReceived != 0x03 || byteReceived == 0x24)
+                if ((byteReceived < 0x21 || byteReceived > 0x7E) && byteReceived != 0x03 || byteReceived == 0x24) // Confirmation bytes sent automatically by nextion, ingore them
                 {
                     continue;
                 }
@@ -219,6 +222,7 @@ void receiveNextionSerial(void *params)
                     Serial.println("From receieveNextionSerial: " + String(buffer));
                 }
 
+                // Reset both buffers for next command
                 bufferIndex = 0;
                 memset(buffer, 0, BUFFER_SIZE);
                 currBufferSize = 0;
@@ -241,6 +245,7 @@ void receiveNextionSerial(void *params)
     }
 }
 
+// Send commands to the nextion display
 void sendNextionSerial(void *pvParameters)
 {
     char command[100];
@@ -262,6 +267,7 @@ void sendNextionSerial(void *pvParameters)
     }
 }
 
+// Execute commands sent to commandQueue from all sources (nextion, c# app, esp-now)
 void executeCommands(void *params)
 {
 
@@ -293,9 +299,10 @@ void executeCommands(void *params)
         {
             deviceMACMap.clear();
             Serial.println("Scanning Esps");
-            getMacAddresses();
+            getMacAddresses();                     // Send broadcast to all espnow devices to get their mac addresses
             vTaskDelay(3000 / portTICK_PERIOD_MS); // Wait for responses from espnow
 
+            // Build a multiline string of all the detected and paired ESP devices
             String multilineString = "";
             for (const auto &pair : deviceMACMap)
             {
@@ -306,14 +313,17 @@ void executeCommands(void *params)
                 multilineString += pair.first;
             }
 
-            for (int i = 0; i <= 19; i++) // 19 total select esp dropdowns on nextion
+            // Send the multiline string to all the select esp dropdowns on the nextion display
+            for (int i = 0; i <= 19; i++) // 20 total select esp dropdowns on nextion
             {
                 queueNextionCommand("select" + String(i) + ".path=\"" + multilineString + "\"");
             }
 
-            String selectedEspsString = commandString.substring(8);
+            String selectedEspsString = commandString.substring(8); // Framed string of previously selected ESPs in settings
             // Serial.println(selectedEspsString);
 
+            // Parse the selectedEspsString to check if the selected ESPs are still available, if they are not, display "Select Esp" on the nextion display to clear it
+            // This keeps all previous selections, only clearing the ESPs that are no longer available
             int startIndex = 0;
             while (true)
             {
@@ -337,7 +347,7 @@ void executeCommands(void *params)
                 startIndex = breakIndex + 5;
             }
         }
-        else if (commandString.startsWith("SW"))
+        else if (commandString.startsWith("SW")) // For commands like "SW1ONAB", "SW7OFF", etc
         {
             for (int i = 0; i < numSwitches; i++)
             {
@@ -349,6 +359,7 @@ void executeCommands(void *params)
                         String command = commandString.substring(currentSwitch.length());
                         std::vector<String> devices = switchDeviceMap[currentSwitch];
 
+                        // Send the ON/OFF command to all devices linked to the switch
                         for (const auto &device : devices)
                         {
                             sendCommandToDevice(command, device);
@@ -358,7 +369,7 @@ void executeCommands(void *params)
                 }
             }
         }
-        else if (commandString.startsWith("LINK"))
+        else if (commandString.startsWith("LINK")) // Linking switches to devices
         {
             String withoutCommand = commandString.substring(4);
 
@@ -595,6 +606,7 @@ void executeCommands(void *params)
     }
 }
 
+// Send hardware data to the nextion display
 void sendHardwareData(void *params)
 {
 
@@ -700,6 +712,7 @@ struct WeatherForecast
     bool isDay;
 };
 
+// Send weather forecasts to the nextion display
 void sendWeatherData(void *params)
 {
 
@@ -753,6 +766,7 @@ void sendWeatherData(void *params)
     }
 }
 
+// Send tide data to the nextion display
 void sendTideData(void *params)
 {
 
@@ -843,6 +857,7 @@ void sendTideData(void *params)
     }
 }
 
+// Send temperature data to the status led if the task is resumed
 void sendTempData(void *params)
 {
 
