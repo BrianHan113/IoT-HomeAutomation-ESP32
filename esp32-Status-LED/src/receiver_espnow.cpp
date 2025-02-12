@@ -73,7 +73,8 @@ void OnDataRecv(const uint8_t *mac, const uint8_t *incomingData, int len)
     }
     else if (String(receivedData).startsWith("BRIGHTNESS"))
     {
-        brightness = String(receivedData).substring(10).toInt();
+        int brightnessPercentage = String(receivedData).substring(10).toInt();
+        brightness = 255 * brightnessPercentage / 100;
     }
 }
 
