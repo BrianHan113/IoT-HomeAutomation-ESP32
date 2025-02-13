@@ -1,11 +1,14 @@
-// USING ESP32-S3 with COM and USB port
+// Copyright (c) 2025 RisosEnterprises Ltd. All rights reserved.
+// Developed by RisosEnterprises Ltd, Auckland, New Zealand.
+// Licensed under Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0).
+// See https://creativecommons.org/licenses/by-nc/4.0/ for details.
+// Author: Brian Han
 
+// USING ESP32-S3 with COM and USB port
 // Because we set ARDUINO_USB_CDC_ON_BOOT=1 in setup,
 // Serial0 is our extra Serial, and Serial is our normal Serial
-
 // Serial0 -> COM Port
 // Serial  -> USB Port
-
 // Usage: Send & receive data at COM port, use USB port as normal for debugging
 
 #include "tasks.h"

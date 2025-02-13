@@ -1,4 +1,10 @@
-﻿using System;
+﻿// Copyright (c) 2025 RisosEnterprises Ltd. All rights reserved.
+// Developed by RisosEnterprises Ltd, Auckland, New Zealand.
+// Licensed under Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0).
+// See https://creativecommons.org/licenses/by-nc/4.0/ for details.
+// Author: Brian Han
+
+using System;
 using System.Collections.Concurrent;
 using System.Threading;
 using SerialSender;
@@ -43,7 +49,7 @@ static class Scheduler
 
         TimeSpan delayToStart = scheduledStart - now;
         TimeSpan delayToEnd = scheduledEnd - now;
-        
+
         Timer timer = new Timer(_ =>
         {
             String action;
@@ -57,7 +63,7 @@ static class Scheduler
                 action = "ON";
             }
             Console.WriteLine("SCHEDULE" + SW + action + channel + (char)0x03);
-            
+
 
             ContextMenus.EnqueueData("SCHEDULE" + SW + action + channel + (char)0x03);
 

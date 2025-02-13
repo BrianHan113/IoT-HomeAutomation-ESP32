@@ -1,4 +1,10 @@
-﻿using System;
+﻿// Copyright (c) 2025 RisosEnterprises Ltd. All rights reserved.
+// Developed by RisosEnterprises Ltd, Auckland, New Zealand.
+// Licensed under Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0).
+// See https://creativecommons.org/licenses/by-nc/4.0/ for details.
+// Author: Brian Han
+
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -26,7 +32,7 @@ namespace SerialSender
         public static IntPtr hwnd = IntPtr.Zero;
 
         const string winampCacheFile = "winamp_directory_cache.txt";
-        const string musicFolderCacheFile= "music_folder_cache.txt";
+        const string musicFolderCacheFile = "music_folder_cache.txt";
 
         public static string directoryPath;
         public static string musicFolderPath;
@@ -76,7 +82,8 @@ namespace SerialSender
                 {
                     Console.WriteLine($"Using cached directory: {directoryPath}");
                     Process.Start(Path.Combine(directoryPath, "winamp.exe"));
-                } else
+                }
+                else
                 {
                     Console.WriteLine("Invalid dir");
                 }
@@ -159,7 +166,7 @@ namespace SerialSender
                 if (Directory.Exists(musicFolderPath))
                 {
                     Console.WriteLine($"Using cached music folder: {musicFolderPath}");
-                    
+
                 }
                 else
                 {

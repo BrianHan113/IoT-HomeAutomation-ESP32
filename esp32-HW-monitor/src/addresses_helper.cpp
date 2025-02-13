@@ -1,3 +1,9 @@
+// Copyright (c) 2025 RisosEnterprises Ltd. All rights reserved.
+// Developed by RisosEnterprises Ltd, Auckland, New Zealand.
+// Licensed under Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0).
+// See https://creativecommons.org/licenses/by-nc/4.0/ for details.
+// Author: Brian Han
+
 #include "addresses_helper.h"
 
 std::map<String, std::array<uint8_t, 6>> deviceMACMap;                   // Saves EspIDs to MAC Address, e.g. "LIGHT1" -> {0x12, 0x34, 0x56, 0x78, 0x90, 0xAB}
