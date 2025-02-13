@@ -7,8 +7,8 @@
 #include <Arduino.h>
 #include <receiver_espnow.h>
 
-int CH1_PIN = 26;
-int CH2_PIN = 27;
+int CH1_PIN = 27;
+int CH2_PIN = 26;
 
 String EspID = "ESP32-SSR";
 

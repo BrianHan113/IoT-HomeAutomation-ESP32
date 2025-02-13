@@ -240,7 +240,10 @@ Uses a WS2815 12V LED Strip with primary data line connected to pin 26 on a esp3
 </table>
 
 ### Solid State Relays
-Uses 2-channel low-level G3MB-202P solid state relays rated for loads of 2A 100-240VAC. Channels 1 and 2 are controlled by esp32 pins 26 and 27 respectively. Link to a switch in settings, and press the switch on the main screen to turn on whatever channel(s) you want. 
+Uses 2-channel low-level G3MB-202P solid state relays rated for loads of 2A 100-240VAC. Channels 1 and 2 are controlled by esp32 pins 27 and 26 respectively. Link to a switch in settings, and press the switch on the main screen to turn on whatever channel(s) you want. 
+
+
+## Wiring diagrams
 
 ## Known Issues
 * Camera capture is very slow, around 10-15 seconds just for a single still image, and during this all buttons are unresponsive. It "works", but is generally pretty unusable, and hence has been disabled. It can easily be enabled by uncommenting code in the setup() function in the main file of HW-Monitor and filling in secret files in the HW-Monitor and CAM projects for WiFi SSID and Password.
