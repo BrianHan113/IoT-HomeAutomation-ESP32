@@ -42,19 +42,19 @@ This demo covers the linking and usage of the esp32-SSR, esp32-LED-strip, esp32-
 ### Getting started
 1. Flash esp32-HW-monitor on central esp32-s3
 2. Flash as many receiver esps as you would like
-3. Connect COM port of esp32-s3 to a USB port on your computer
+3. Connect COM port of esp32-s3 to a USB port on your computer (See wiring diagram)
 4. Flash whichever .HMI file (simplified or full) in nextion-HMI onto the nextion 
 5. Make sure the esp32-s3 and the nextion share a common ground
-6. Start the ArduinoWeatherHardwareMonitor desktop app, make sure to run as admin
+6. Start the ArduinoWeatherHardwareMonitor desktop app, make sure to run as admin. For quick setup with no TideAPI functionality, execute ArduinoWeatherHardwaremonitor_RELEASE/SerialSender.exe. If you want Tide functionality, you must add your API key to the Secret_PLACEHOLDER.cs file, and recompile the project in Visual Studio.
 7. Select the appropriate serial port by right clicking the tray icon
 
 At this point, the waveforms and weather information should have loaded on the main page, the LOCKPC button and the music player should be working. Right click the tray icon to select your WinAmp installation folder and your music folder. You will only have to do this once, unless you change your WinAmp path or your music folder. The music player plays MP3, MIDI, MOD, MPEG-1, AAC, M4A, FLAC, WAV, WMA, Ogg Vorbis.
 
 
 ### General Information
-I have included all the specific hardware/sensors/parts I used for all the different peripherals below. You can definitely use different hardware, you will likely just have to modify the code in the peripheral projects.
+I have included all the specific hardware/sensors/parts I used for all the different peripherals under Wiring Diagrams. You can definitely use different hardware, but you will likely have to modify some code in the peripheral projects.
 
-All peripheral projects have EspIDs in their main.cpp files. You can change the names of these to anything you want.
+All peripheral projects have EspIDs in their main.cpp files. You can change the names of these to anything you want. E.g. "living room lights", "garage motion sensor", etc.
 
 In settings, you can click directly on any numbers to bring up a on-screen numerical keyboard, and press the <strong>X</strong> to clear selections. You should always hit <strong>APPLY</strong> after changing any settings to keep the system up to date and accurate to what is shown on the settings page.
 
@@ -87,8 +87,11 @@ Can be used for esp32 or esp8266, just flash the appropriate receiver firmware.
   </tr>
 </table>
 
+### Solid State Relays
+Link to a switch in settings, and press the switch on the main screen to turn on whatever channel(s) you want. 
+
+
 ### Temperature Sensor
-Uses a DHT22 with the data line connected to pin 26 on esp32. Make sure to add a pull down resistor for stable signal (see official DHT22 documentation).
 
 <table align="center">
   <tr>
@@ -114,7 +117,7 @@ Uses a DHT22 with the data line connected to pin 26 on esp32. Make sure to add a
 </table>
 
 ### Motion Sensor
-Uses a PIR sensor with the data line connected to pin 13 on a esp32.
+
 <table align="center">
   <tr>
     <td><div>
@@ -166,7 +169,6 @@ Make sure the desktop app is open, and the serial port to the central esp is con
 
 
 ### LED Strip
-Uses a WS2815 12V LED Strip with primary data line connected to pin 26 on a esp32. I have 19 LEDs on my LED strip, but you should change that definition to however many LEDs you have in the main file of the esp32-LED-strip project.
 
 <table align="center">
   <tr>
@@ -194,7 +196,7 @@ Uses a WS2815 12V LED Strip with primary data line connected to pin 26 on a esp3
 </table>
 
 ### Status LED Strip
-Uses a WS2815 12V LED Strip with primary data line connected to pin 26 on a esp32. I have 19 LEDs on my LED strip, but you should change that definition to however many LEDs you have in the main file of the esp32-LED-strip project.
+
 <table align="center">
   <tr>
     <td><div>
@@ -239,11 +241,48 @@ Uses a WS2815 12V LED Strip with primary data line connected to pin 26 on a esp3
   </tr>
 </table>
 
+## Wiring Diagrams
+
+### Nextion and Central ESP
+* Nextion - NX1060P101-011C-I, RX of Nextion to pin 17, TX of Nextion to pin 18
+* ESP32-S3 - Connect USB Port on the ESP to the PC
+* SD Card in Nextion if using ESP-CAMs, otherwise not necessary
+* Make sure ESP shares common ground with Nextion and the PSU
+<div>
+  <img src="readme_imgs/esp32s3nextion.PNG" width="700">
+</div>
+
+### Temperature Sensor
+* ESP32 - data line from sensor connected to GPIO pin 26.
+* DHT22 - 3.3V VCC
+* 1 KOhm Resistor - Make sure to add a pull-up resistor between data and VCC for stable transmission (see official DHT22 documentation).
+<div>
+  <img src="readme_imgs/tempwiring.PNG" width="700">
+</div>
+
+### Motion Sensor
+* ESP32 - Data line on PIR sensor to pin 13
+* PIR Sensor - HC-SR501, 5V VCC
+<div>
+  <img src="readme_imgs/motionwiring.PNG" width="700">
+</div>
+
+
+### LED Strip & Status LED Strip
+* ESP32 - Primary data line of LED Strip connected to pin 26
+* LED Strip - WS2815 12V LED Strip 
+* I have 19 LEDs on my LED strip, but you should change that definition to however many LEDs you have in the main file of the esp32-LED-strip project.
+<div>
+  <img src="readme_imgs/LEDwiring.PNG" width="700">
+</div>
+
 ### Solid State Relays
-Uses 2-channel low-level G3MB-202P solid state relays rated for loads of 2A 100-240VAC. Channels 1 and 2 are controlled by esp32 pins 27 and 26 respectively. Link to a switch in settings, and press the switch on the main screen to turn on whatever channel(s) you want. 
-
-
-## Wiring diagrams
+* ESP32
+* SSR - G3MB-202P 2-channel low-level, 5V DC input, 240VAC 2A output
+* Channels 1 and 2 are controlled by esp32 pins 27 and 26 respectively. 
+<div>
+  <img src="readme_imgs/SSRwiring.PNG" width="700">
+</div>
 
 ## Known Issues
 * Camera capture is very slow, around 10-15 seconds just for a single still image, and during this all buttons are unresponsive. It "works", but is generally pretty unusable, and hence has been disabled. It can easily be enabled by uncommenting code in the setup() function in the main file of HW-Monitor and filling in secret files in the HW-Monitor and CAM projects for WiFi SSID and Password.
