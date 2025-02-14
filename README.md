@@ -15,12 +15,12 @@ IoT Home Automation system using ESP32s to control various peripherals, develope
 
 ## Demo Video (Simplified Version)
 
-<a href="https://www.youtube.com/watch?v=IO-2psQk7W8">
-    <img src="https://img.youtube.com/vi/IO-2psQk7W8/0.jpg" width="300">
+<a href="https://www.youtube.com/watch?v=xSinmTBI6Ek" target="_blank" rel="noopener noreferrer">
+    <img src="https://img.youtube.com/vi/xSinmTBI6Ek/0.jpg" width="300">
 </a>
 
 
-This demo covers the linking and usage of the esp32-SSR, esp32-LED-strip, esp32-Motion-Sensor, and esp32-Temp-Sensor. I linked them all onto one switch for demonstration purposes, but you could obviously link them to other switches. The SSR isn't hooked up to anything, but it is rated for any 100-240VAC load. With just this bare bones setup, you could automate many things, like activating some LED night lights when motion is detected, setting off an emergency alarm when the temperature sensor triggers, turning on a light bulb when entering a room, etc. 
+This demo covers the linking and usage of the esp32-SSR, esp32-Status-LED, esp32-Motion-Sensor, and esp32-Temp-Sensor. I linked them all onto one switch for demonstration purposes, but you could obviously link them to other switches. The SSR isn't hooked up to anything, but it is rated for any 100-240VAC load. With just this bare bones setup, you could automate many things, like setting off an emergency alarm when the temperature sensor triggers, turning on a light bulb when entering a room, etc. 
 
 ## Summary of features
 * Detection and pairing with powered ESPs that have the receiver firmware programmed
