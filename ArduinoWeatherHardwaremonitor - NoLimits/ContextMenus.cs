@@ -417,19 +417,19 @@ namespace SerialSender
 
         /////////////////////////////////////////////////////////
 
-        public void weatherapp(object StateObj)
+        public async void weatherapp(object StateObj)
         {
 
             Console.WriteLine("Weather App function entered");
 
             try
             {
-                using (WebClient client = new WebClient())
+                using (HttpClient client = new HttpClient())
                 {
                     Console.WriteLine("ACCESSING jsonWeather ...");
-                    client.Proxy = null;
+                    client.DefaultRequestHeaders.ConnectionClose = true;
 
-                    string jsonWeather = client.DownloadString($"https://api.open-meteo.com/v1/forecast?latitude={latitude}&longitude={longitude}&current=is_day&hourly=temperature_2m,precipitation_probability,precipitation,weather_code,wind_speed_10m,wind_direction_10m&daily=sunrise,sunset&timezone=auto");
+                    string jsonWeather = await client.GetStringAsync($"https://api.open-meteo.com/v1/forecast?latitude={latitude}&longitude={longitude}&current=is_day&hourly=temperature_2m,precipitation_probability,precipitation,weather_code,wind_speed_10m,wind_direction_10m&daily=sunrise,sunset&timezone=auto");
 
                     Console.WriteLine(jsonWeather);
 
