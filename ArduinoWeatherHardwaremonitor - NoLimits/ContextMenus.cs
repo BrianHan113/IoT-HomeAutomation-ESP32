@@ -217,6 +217,7 @@ namespace SerialSender
                 lock (serialLock)
                 {
                     Console.WriteLine("Sending");
+                    SelectedSerialPort.Write("Test" + (char)0x03); // Testing code
                     SelectedSerialPort.Write(data);
                 }
             }

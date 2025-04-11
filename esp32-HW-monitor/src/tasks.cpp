@@ -45,6 +45,8 @@ void receiveHardwareData(void *params)
         {
             receivedData = Serial0.readStringUntil(0x03); // 0x03 is the termination character
 
+            Serial.println(receivedData); // Testing code
+
             if (receivedData.startsWith("HARDWARE")) // CPU, GPU, RAM, Power data
             {
                 splicedData = receivedData.substring(8);
