@@ -41,11 +41,11 @@ void receiveHardwareData(void *params)
         // UBaseType_t stackLeft = uxTaskGetStackHighWaterMark(NULL);
         // Serial.println("Stack rec HW Data: " + String(stackLeft));
 
-        if (Serial0.available() > 0)
+        if (Serial.available() > 0)
         {
-            receivedData = Serial0.readStringUntil(0x03); // 0x03 is the termination character
+            receivedData = Serial.readStringUntil(0x03); // 0x03 is the termination character
 
-            Serial.println(receivedData); // Testing code
+            // Serial.println(receivedData); // Testing code
 
             if (receivedData.startsWith("HARDWARE")) // CPU, GPU, RAM, Power data
             {
@@ -301,7 +301,7 @@ void executeCommands(void *params)
         else if (commandString == "LOCKPC")
         {
             Serial.println("Lock PC");
-            Serial0.println("LOCKPC"); // Redirect command to c# app
+            Serial.println("LOCKPC"); // Redirect command to c# app
         }
         else if (commandString.startsWith("SCANESPS"))
         {
@@ -396,13 +396,13 @@ void executeCommands(void *params)
         else if (commandString.startsWith("SCHEDULE"))
         {
             // Serial.println("Sending to desktop app");
-            Serial0.println(commandString);
+            Serial.println(commandString);
         }
         else if (commandString.startsWith("WEATHERDELTA"))
         {
             String delta = commandString.substring(12);
             // Serial.println("Sending to desktop app");
-            Serial0.println(commandString);
+            Serial.println(commandString);
         }
         else if (commandString.startsWith("LEDSTRIP"))
         {
@@ -481,43 +481,43 @@ void executeCommands(void *params)
             Serial.print("Play Music: ");
             int songIndex = nextionNumConvert(13, commandString.length() - 4, commandString);
             Serial.println((String)songIndex);
-            Serial0.print("PLAYMUSIC");
-            Serial0.println(songIndex);
+            Serial.print("PLAYMUSIC");
+            Serial.println(songIndex);
         }
         else if (commandString == "REFRESHMUSIC")
         {
             Serial.println("Refreshing music list");
-            Serial0.println("REFRESHMUSIC");
+            Serial.println("REFRESHMUSIC");
         }
         else if (commandString == "PAUSEMUSIC")
         {
             Serial.println("Pause Music");
-            Serial0.println("PAUSEMUSIC");
+            Serial.println("PAUSEMUSIC");
         }
         else if (commandString == "INCREASEMUSIC")
         {
             Serial.println("Increase volume");
-            Serial0.println("INCREASEMUSIC");
+            Serial.println("INCREASEMUSIC");
         }
         else if (commandString == "DECREASEMUSIC")
         {
             Serial.println("Decrease volume");
-            Serial0.println("DECREASEMUSIC");
+            Serial.println("DECREASEMUSIC");
         }
         else if (commandString.startsWith("LOCATION"))
         {
             // Serial.println("Location data");
-            Serial0.println(commandString);
+            Serial.println(commandString);
         }
         else if (commandString == "REFRESHWEATHER")
         {
             // Serial.println("Refresh weather");
-            Serial0.println("REFRESHWEATHER"); // Redirect command to c# app to fetch weather data
+            Serial.println("REFRESHWEATHER"); // Redirect command to c# app to fetch weather data
         }
         else if (commandString == "REFRESHTIDE")
         {
             // Serial.println("Refreshing Tides");
-            Serial0.println("REFRESHTIDE");
+            Serial.println("REFRESHTIDE");
         }
         else if (commandString == "REFRESHCAM1")
         {
