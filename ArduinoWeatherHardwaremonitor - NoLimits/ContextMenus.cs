@@ -12,6 +12,8 @@ using System.Collections.Concurrent;
 using System.IO;
 using System.Net.Http;
 using System.Linq.Expressions;
+using System.CodeDom;
+using System.Reflection.Emit;
 
 
 
@@ -86,11 +88,19 @@ namespace SerialSender
         SerialPort SelectedSerialPort;
         ContextMenuStrip menu;
         LibreHardwareMonitor.Hardware.Computer thisComputer;
-        private System.Threading.Timer TimerItem;
-        private System.Threading.Timer TimerItem2;
-        private System.Threading.Timer TimerItem3;
-        private System.Threading.Timer TimerItem4;
-        private System.Threading.Timer TimerItem5;
+        private System.Threading.Timer dataCheckTimer;
+        private System.Threading.Timer weatherTimer;
+        private System.Threading.Timer readSerialTimer;
+        private System.Threading.Timer sendDataTimer;
+        private System.Threading.Timer tideTimer;
+
+        private bool isDataCheckRunning = false;
+        private bool isWeatherRunning = false;
+        private bool isReadSerialRunning = false;
+        private bool isSendDataRunning = false;
+        private bool isTideRunning = false;
+
+
 
         private static readonly ConcurrentQueue<string> sendQueue = new ConcurrentQueue<string>();
         private bool isSending = false;
@@ -105,11 +115,7 @@ namespace SerialSender
         private static double longitude = 174.74;
         private static int deltaHours = 1; // Default fetch weather data in 1 hour gaps
         private static readonly object deltaHoursLock = new object();
-        public class StateObjClass
-        {
-            public System.Threading.Timer TimerReference;
-            public bool TimerCanceled;
-        }
+
         public ContextMenuStrip Create()
         {
 
@@ -206,188 +212,202 @@ namespace SerialSender
             sendQueue.Enqueue(data);
         }
 
-        public void sendData(object StateObj)
+        public void sendData(object state)
         {
-            if (sendQueue.TryDequeue(out string data))
+
+            if (isSendDataRunning) return;
+            isSendDataRunning = true;
+
+            try
             {
-                while (SelectedSerialPort.BytesToWrite > 0)
+                if (sendQueue.TryDequeue(out string data))
                 {
-                    Thread.Sleep(10);
+                    while (SelectedSerialPort.BytesToWrite > 0)
+                    {
+                        Thread.Sleep(10);
+                    }
+                    lock (serialLock)
+                    {
+                        Console.WriteLine("Sending");
+                        SelectedSerialPort.Write(data);
+                    }
                 }
-                lock (serialLock)
-                {
-                    Console.WriteLine("Sending");
-                    SelectedSerialPort.Write("Test" + (char)0x03); // Testing code
-                    SelectedSerialPort.Write(data);
-                }
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine("Exception in sendData");
+            }
+            finally 
+            {
+                isSendDataRunning = false;
             }
         }
 
 
         void Selected_Serial(object sender, EventArgs e, string selected_port)
         {
-            Console.WriteLine("Selected port");
-            Console.WriteLine(selected_port);
-            Console.ReadLine();
+            if (SelectedSerialPort?.IsOpen == true)
+                SelectedSerialPort.Close();
+
             SelectedSerialPort = new SerialPort(selected_port, BAUD_RATE);
-            if (!SelectedSerialPort.IsOpen)
-            {
-                SelectedSerialPort.Open();
-            }
-            ;
-            StateObjClass StateObj = new StateObjClass();
-            StateObj.TimerCanceled = false;
-            System.Threading.TimerCallback TimerDelegate = new System.Threading.TimerCallback(dataCheck);
-            System.Threading.TimerCallback TimerDelegate2 = new System.Threading.TimerCallback(weatherapp);
-            System.Threading.TimerCallback TimerDelegate3 = new System.Threading.TimerCallback(readSerial);
-            System.Threading.TimerCallback TimerDelegate4 = new System.Threading.TimerCallback(sendData);
-            //System.Threading.TimerCallback TimerDelegate5 = new System.Threading.TimerCallback(tideData); // Uncomment to auto schedule tide data refresh (But be warned tokens are very expensive)
+            SelectedSerialPort.Open();
 
-
-            TimerItem = new System.Threading.Timer(TimerDelegate, StateObj, 1000, 2500); //hardware
-            TimerItem2 = new System.Threading.Timer(TimerDelegate2, StateObj, 5000, 15 * 60 * 1000); //weather
-            TimerItem3 = new System.Threading.Timer(TimerDelegate3, StateObj, 1000, 1000); //Serial transmitted from esp
-            TimerItem4 = new System.Threading.Timer(TimerDelegate4, StateObj, 1000, 1000); //Send serial
-            //TimerItem5 = new System.Threading.Timer(TimerDelegate5, StateObj, 5000, 6*60*60*1000); //High Low tide
-
-            StateObj.TimerReference = TimerItem;
-
+            dataCheckTimer = new System.Threading.Timer(dataCheck, null, 1000, 2500);
+            weatherTimer = new System.Threading.Timer(weatherapp, null, 5000, 15 * 60 * 1000);
+            readSerialTimer = new System.Threading.Timer(readSerial, null, 1000, 1000);
+            sendDataTimer = new System.Threading.Timer(sendData, null, 1000, 1000);
+            //tideTimer = new System.Threading.Timer(tideData, null, 5000, 6 * 60 * 60 * 1000);
         }
 
 
         /////////////////////////////////////////////////////////
 
-        public void readSerial(object StateObj)
+        public void readSerial(object state)
         {
-            SelectedSerialPort.DataReceived += (sender, e) =>
+
+            if (isReadSerialRunning) return;
+            isReadSerialRunning = true;
+
+            try
             {
-                string data = SelectedSerialPort.ReadLine();
-                data = data.TrimEnd('\r');
-                Console.WriteLine("Received: " + data);
-
-                if (data == "REFRESHWEATHER")
+                SelectedSerialPort.DataReceived += (sender, e) =>
                 {
-                    Console.WriteLine("Refreshing Weather info");
-                    lock (deltaHoursLock)
+                    string data = SelectedSerialPort.ReadLine();
+                    data = data.TrimEnd('\r');
+                    Console.WriteLine("Received: " + data);
+
+                    if (data == "REFRESHWEATHER")
                     {
-                        weatherapp(null);
-                    }
-                }
-                else if (data == "LOCKPC")
-                {
-                    Console.WriteLine("Lock PC");
-                    Process.Start("rundll32.exe", "user32.dll,LockWorkStation");
-                }
-                else if (data == "REFRESHMUSIC")
-                {
-                    SendSongString(WinAmp.musicFolderPath);
-                }
-                else if (data.StartsWith("PLAYMUSIC"))
-                {
-                    String num = data.Substring(9, data.Length - 9);
-                    int index = int.Parse(num);
-                    String songDir;
-                    try
-                    {
-                        songDir = songs[index];
-                        Process.Start(WinAmp.directoryPath + "\\winamp.exe", "\"" + songDir + "\"");
-                    }
-                    catch (Exception)
-                    {
-                        Console.WriteLine("Refresh music player nextion");
-                    }
-
-                }
-                else if (data == "PAUSEMUSIC")
-                {
-                    Process.Start(WinAmp.directoryPath + "\\winamp.exe", "/pause");
-                }
-                else if (data == "INCREASEMUSIC")
-                {
-                    WinAmp.SendMessage(WinAmp.hwnd, WinAmp.WM_COMMAND, (IntPtr)WinAmp.INCREASE_VOLUME, IntPtr.Zero);
-
-                }
-                else if (data == "DECREASEMUSIC")
-                {
-                    WinAmp.SendMessage(WinAmp.hwnd, WinAmp.WM_COMMAND, (IntPtr)WinAmp.DECREASE_VOLUME, IntPtr.Zero);
-                }
-                else if (data == "REFRESHTIDE")
-                {
-                    Console.WriteLine("Refreshing Tide info");
-                    tideData(null);
-                }
-                else if (data.StartsWith("SCHEDULE"))
-                {
-                    if (data.Substring(8).StartsWith("CLEAR"))
-                    {
-                        data = data.Substring(5);
-                        string start = data.Substring(8, 4);
-                        string end = data.Substring(12, 4);
-
-                        int swStartIndex = 16;
-                        int channelStartIndex = data.IndexOf("CHANNEL", swStartIndex) + "CHANNEL".Length;
-                        string SW = data.Substring(swStartIndex, channelStartIndex - swStartIndex - "CHANNEL".Length);
-                        string channel = data.Substring(channelStartIndex);
-
-                        if (SW == "MOTIONSENSOR" || SW == "TEMPSENSOR")
+                        Console.WriteLine("Refreshing Weather info");
+                        lock (deltaHoursLock)
                         {
-                            channel = "";
+                            weatherapp(null);
                         }
-                        Console.WriteLine("Clearing: " + SW + channel + start + end);
-                        Scheduler.CancelTask(SW + channel + start + end);
-                        Scheduler.CancelTask(SW + channel + start + end + "END");
                     }
-                    else
+                    else if (data == "LOCKPC")
                     {
-                        string start = data.Substring(8, 4);
-                        string end = data.Substring(12, 4);
-
-                        int swStartIndex = 16;
-                        int channelStartIndex = data.IndexOf("CHANNEL", swStartIndex) + "CHANNEL".Length;
-                        string SW = data.Substring(swStartIndex, channelStartIndex - swStartIndex - "CHANNEL".Length);
-                        string channel = data.Substring(channelStartIndex);
-
-                        if (SW == "MOTIONSENSOR" || SW == "TEMPSENSOR")
+                        Console.WriteLine("Lock PC");
+                        Process.Start("rundll32.exe", "user32.dll,LockWorkStation");
+                    }
+                    else if (data == "REFRESHMUSIC")
+                    {
+                        SendSongString(WinAmp.musicFolderPath);
+                    }
+                    else if (data.StartsWith("PLAYMUSIC"))
+                    {
+                        String num = data.Substring(9, data.Length - 9);
+                        int index = int.Parse(num);
+                        String songDir;
+                        try
                         {
-                            channel = "";
+                            songDir = songs[index];
+                            Process.Start(WinAmp.directoryPath + "\\winamp.exe", "\"" + songDir + "\"");
+                        }
+                        catch (Exception)
+                        {
+                            Console.WriteLine("Refresh music player nextion");
                         }
 
-                        Console.WriteLine($"Start: {start}");
-                        Console.WriteLine($"End: {end}");
-                        Console.WriteLine($"Switch: {SW}");
-                        Console.WriteLine($"Channel: {channel}");
-
-                        Scheduler.ScheduleSwitch(SW, channel, start, end);
-
-                        ////For testing
-                        //start = DateTime.Now.AddMinutes(1).ToString("HHmm");
-                        //end = DateTime.Now.AddMinutes(2).ToString("HHmm");
-                        //Scheduler.ScheduleSwitch(SW, channel, start, end);
                     }
-                }
-                else if (data.StartsWith("LOCATION"))
-                {
-                    String location = data.Substring(8);
-                    int latStart = location.IndexOf("LAT") + 3;
-                    int latEnd = location.IndexOf("LONG");
-                    latitude = double.Parse(location.Substring(latStart, latEnd - latStart));
-
-                    int longStart = latEnd + 4;
-                    longitude = double.Parse(location.Substring(longStart));
-
-                    Console.WriteLine($"Latitude: {latitude}, Longitude: {longitude}");
-                }
-                else if (data.StartsWith("WEATHERDELTA"))
-                {
-                    int deltaHoursLocal = int.Parse(data.Substring(12));
-
-                    lock (deltaHoursLock)
+                    else if (data == "PAUSEMUSIC")
                     {
-                        deltaHours = deltaHoursLocal;
-                        Console.WriteLine(deltaHours);
+                        Process.Start(WinAmp.directoryPath + "\\winamp.exe", "/pause");
                     }
-                }
-            };
+                    else if (data == "INCREASEMUSIC")
+                    {
+                        WinAmp.SendMessage(WinAmp.hwnd, WinAmp.WM_COMMAND, (IntPtr)WinAmp.INCREASE_VOLUME, IntPtr.Zero);
+
+                    }
+                    else if (data == "DECREASEMUSIC")
+                    {
+                        WinAmp.SendMessage(WinAmp.hwnd, WinAmp.WM_COMMAND, (IntPtr)WinAmp.DECREASE_VOLUME, IntPtr.Zero);
+                    }
+                    else if (data == "REFRESHTIDE")
+                    {
+                        Console.WriteLine("Refreshing Tide info");
+                        tideData(null);
+                    }
+                    else if (data.StartsWith("SCHEDULE"))
+                    {
+                        if (data.Substring(8).StartsWith("CLEAR"))
+                        {
+                            data = data.Substring(5);
+                            string start = data.Substring(8, 4);
+                            string end = data.Substring(12, 4);
+
+                            int swStartIndex = 16;
+                            int channelStartIndex = data.IndexOf("CHANNEL", swStartIndex) + "CHANNEL".Length;
+                            string SW = data.Substring(swStartIndex, channelStartIndex - swStartIndex - "CHANNEL".Length);
+                            string channel = data.Substring(channelStartIndex);
+
+                            if (SW == "MOTIONSENSOR" || SW == "TEMPSENSOR")
+                            {
+                                channel = "";
+                            }
+                            Console.WriteLine("Clearing: " + SW + channel + start + end);
+                            Scheduler.CancelTask(SW + channel + start + end);
+                            Scheduler.CancelTask(SW + channel + start + end + "END");
+                        }
+                        else
+                        {
+                            string start = data.Substring(8, 4);
+                            string end = data.Substring(12, 4);
+
+                            int swStartIndex = 16;
+                            int channelStartIndex = data.IndexOf("CHANNEL", swStartIndex) + "CHANNEL".Length;
+                            string SW = data.Substring(swStartIndex, channelStartIndex - swStartIndex - "CHANNEL".Length);
+                            string channel = data.Substring(channelStartIndex);
+
+                            if (SW == "MOTIONSENSOR" || SW == "TEMPSENSOR")
+                            {
+                                channel = "";
+                            }
+
+                            Console.WriteLine($"Start: {start}");
+                            Console.WriteLine($"End: {end}");
+                            Console.WriteLine($"Switch: {SW}");
+                            Console.WriteLine($"Channel: {channel}");
+
+                            Scheduler.ScheduleSwitch(SW, channel, start, end);
+
+                            ////For testing
+                            //start = DateTime.Now.AddMinutes(1).ToString("HHmm");
+                            //end = DateTime.Now.AddMinutes(2).ToString("HHmm");
+                            //Scheduler.ScheduleSwitch(SW, channel, start, end);
+                        }
+                    }
+                    else if (data.StartsWith("LOCATION"))
+                    {
+                        String location = data.Substring(8);
+                        int latStart = location.IndexOf("LAT") + 3;
+                        int latEnd = location.IndexOf("LONG");
+                        latitude = double.Parse(location.Substring(latStart, latEnd - latStart));
+
+                        int longStart = latEnd + 4;
+                        longitude = double.Parse(location.Substring(longStart));
+
+                        Console.WriteLine($"Latitude: {latitude}, Longitude: {longitude}");
+                    }
+                    else if (data.StartsWith("WEATHERDELTA"))
+                    {
+                        int deltaHoursLocal = int.Parse(data.Substring(12));
+
+                        lock (deltaHoursLock)
+                        {
+                            deltaHours = deltaHoursLocal;
+                            Console.WriteLine(deltaHours);
+                        }
+                    }
+                };
+            }
+            catch
+            {
+                Console.WriteLine("Exception in readSerial");
+            }
+            finally
+            {
+                isReadSerialRunning = false;
+            }
         }
 
         /////////////////////////////////////////////////////////
@@ -418,8 +438,10 @@ namespace SerialSender
 
         /////////////////////////////////////////////////////////
 
-        public async void weatherapp(object StateObj)
+        public async void weatherapp(object state)
         {
+            if (isWeatherRunning) return;
+            isWeatherRunning = true;
 
             Console.WriteLine("Weather App function entered");
 
@@ -432,7 +454,7 @@ namespace SerialSender
 
                     string jsonWeather = await client.GetStringAsync($"https://api.open-meteo.com/v1/forecast?latitude={latitude}&longitude={longitude}&current=is_day&hourly=temperature_2m,precipitation_probability,precipitation,weather_code,wind_speed_10m,wind_direction_10m&daily=sunrise,sunset&timezone=auto");
 
-                    Console.WriteLine(jsonWeather);
+                    //Console.WriteLine(jsonWeather);
 
                     var myweather = JsonConvert.DeserializeObject<WeatherObject>(jsonWeather);
 
@@ -495,12 +517,19 @@ namespace SerialSender
             }
             catch (Exception)
             {
-                Console.WriteLine("############################### ATTENTION: No internet connection for weather ###############################");
+                Console.WriteLine("Exception in weather");
+            } 
+            finally
+            {
+                isWeatherRunning = false;
             }
         }
         /////////////////////////////////////////////////////////
-        public async void tideData(object StateObj)
+        public async void tideData(object state)
         {
+
+            if (isTideRunning) return;
+            isTideRunning = true;
 
             Console.WriteLine("ACCESSING tide information ...");
             TideForecast tideForecast = new TideForecast();
@@ -586,132 +615,150 @@ namespace SerialSender
             catch (Exception)
             {
 
-                Console.WriteLine("############################### ATTENTION: No internet connection for weather ###############################");
+                Console.WriteLine("Exception in tideData");
+            }
+            finally
+            {
+                isTideRunning = false;
             }
         }
         /////////////////////////////////////////////////////////
-        public void dataCheck(object StateObj)
+        public void dataCheck(object state)
         {
-            float GpuTemp = -1.0f;
-            float[] coreNoLoad = new float[20];
-            float[] coreNoTemp = new float[20];
-            float[] coreNoClock = new float[20];
-            float RamUsed = -1.0f;
-            float RamAvail = -1.0f;
-            int cpuPackageTemp = 0;
-            float gpuPower = -1.0f;
-            float cpuPackagePower = -1.0f;
+            if (isDataCheckRunning) return;
+            isDataCheckRunning = true;
 
-
-            StateObjClass State = (StateObjClass)StateObj;
-
-            foreach (LibreHardwareMonitor.Hardware.IHardware hw in thisComputer.Hardware)
+            try
             {
-                Console.ReadLine();
-                hw.Update();
+                float GpuTemp = -1.0f;
+                float[] coreNoLoad = new float[20];
+                float[] coreNoTemp = new float[20];
+                float[] coreNoClock = new float[20];
+                float RamUsed = -1.0f;
+                float RamAvail = -1.0f;
+                int cpuPackageTemp = 0;
+                float gpuPower = -1.0f;
+                float cpuPackagePower = -1.0f;
 
-                foreach (LibreHardwareMonitor.Hardware.ISensor s in hw.Sensors)
+                foreach (LibreHardwareMonitor.Hardware.IHardware hw in thisComputer.Hardware)
                 {
-                    //Console.WriteLine("NAME: " + s.Name + ", TYPE: " + s.SensorType + ", VALUE: " + s.Value);
                     Console.ReadLine();
+                    hw.Update();
 
-                    // CPU  
-                    if (s.SensorType == LibreHardwareMonitor.Hardware.SensorType.Temperature)
+                    foreach (LibreHardwareMonitor.Hardware.ISensor s in hw.Sensors)
                     {
-                        if (s.Value != null)
-                        {
-                            if (s.Name.StartsWith("CPU Package"))
-                            {
-                                cpuPackageTemp = (int)Convert.ToDouble(s.Value);
+                        //Console.WriteLine("NAME: " + s.Name + ", TYPE: " + s.SensorType + ", VALUE: " + s.Value);
+                        Console.ReadLine();
 
+                        // CPU  
+                        if (s.SensorType == LibreHardwareMonitor.Hardware.SensorType.Temperature)
+                        {
+                            if (s.Value != null)
+                            {
+                                if (s.Name.StartsWith("CPU Package"))
+                                {
+                                    cpuPackageTemp = (int)Convert.ToDouble(s.Value);
+
+                                }
                             }
                         }
-                    }
 
-                    if (s.SensorType == LibreHardwareMonitor.Hardware.SensorType.Power)
-                    {
-                        if (s.Value != null)
+                        if (s.SensorType == LibreHardwareMonitor.Hardware.SensorType.Power)
                         {
-                            if (s.Name.StartsWith("CPU Package"))
+                            if (s.Value != null)
                             {
-                                cpuPackagePower = (float)Convert.ToDouble(s.Value);
+                                if (s.Name.StartsWith("CPU Package"))
+                                {
+                                    cpuPackagePower = (float)Convert.ToDouble(s.Value);
 
+                                }
                             }
                         }
-                    }
 
 
-                    // GPU
-                    if (s.SensorType == LibreHardwareMonitor.Hardware.SensorType.Temperature)
-                    {
-                        if (s.Value != null)
+                        // GPU
+                        if (s.SensorType == LibreHardwareMonitor.Hardware.SensorType.Temperature)
                         {
-                            float gpuTemp = (float)Math.Round((double)s.Value, 2);
-                            switch (s.Name)
+                            if (s.Value != null)
                             {
-                                case "GPU Core":
-                                    GpuTemp = gpuTemp;
-                                    break;
+                                float gpuTemp = (float)Math.Round((double)s.Value, 2);
+                                switch (s.Name)
+                                {
+                                    case "GPU Core":
+                                        GpuTemp = gpuTemp;
+                                        break;
+                                }
                             }
                         }
-                    }
 
-                    if (s.SensorType == LibreHardwareMonitor.Hardware.SensorType.Power)
-                    {
-                        if (s.Value != null)
+                        if (s.SensorType == LibreHardwareMonitor.Hardware.SensorType.Power)
                         {
-                            if (s.Name.StartsWith("GPU Power"))
+                            if (s.Value != null)
                             {
-                                gpuPower = (float)Convert.ToDouble(s.Value);
+                                if (s.Name.StartsWith("GPU Power"))
+                                {
+                                    gpuPower = (float)Convert.ToDouble(s.Value);
 
+                                }
                             }
                         }
-                    }
 
-                    // RAM
-                    if (s.SensorType == LibreHardwareMonitor.Hardware.SensorType.Data)
-                    {
-                        if (s.Value != null)
+                        // RAM
+                        if (s.SensorType == LibreHardwareMonitor.Hardware.SensorType.Data)
                         {
-                            float ramUsed = (float)Math.Round((double)s.Value, 2);
-                            switch (s.Name)
+                            if (s.Value != null)
                             {
-                                case "Memory Used":
-                                    RamUsed = ramUsed;
-                                    break;
+                                float ramUsed = (float)Math.Round((double)s.Value, 2);
+                                switch (s.Name)
+                                {
+                                    case "Memory Used":
+                                        RamUsed = ramUsed;
+                                        break;
+                                }
                             }
                         }
-                    }
-                    if (s.SensorType == LibreHardwareMonitor.Hardware.SensorType.Data)
-                    {
-                        if (s.Value != null)
+                        if (s.SensorType == LibreHardwareMonitor.Hardware.SensorType.Data)
                         {
-                            float ramAvail = (float)Math.Round((double)s.Value, 2);
-                            switch (s.Name)
+                            if (s.Value != null)
                             {
-                                case "Memory Available":
-                                    RamAvail = ramAvail;
-                                    break;
+                                float ramAvail = (float)Math.Round((double)s.Value, 2);
+                                switch (s.Name)
+                                {
+                                    case "Memory Available":
+                                        RamAvail = ramAvail;
+                                        break;
+                                }
                             }
                         }
                     }
                 }
+
+                ComputerData computerData = new ComputerData
+                {
+                    RamUsed = RamUsed,
+                    RamAvail = RamAvail,
+                    GpuTemp = GpuTemp,
+                    CpuPackageTemp = cpuPackageTemp,
+                    CpuPackagePower = cpuPackagePower,
+                    GpuPower = gpuPower
+                };
+
+                var json = "HARDWARE" + JsonConvert.SerializeObject(computerData) + (char)0x03;
+
+                Console.WriteLine(json);
+                EnqueueData(json);
+            }
+            catch 
+            {
+                Console.WriteLine("Excpetion in dataCheck");
+            }
+            finally 
+            {
+                isDataCheckRunning = false;
             }
 
-            ComputerData computerData = new ComputerData
-            {
-                RamUsed = RamUsed,
-                RamAvail = RamAvail,
-                GpuTemp = GpuTemp,
-                CpuPackageTemp = cpuPackageTemp,
-                CpuPackagePower = cpuPackagePower,
-                GpuPower = gpuPower
-            };
 
-            var json = "HARDWARE" + JsonConvert.SerializeObject(computerData) + (char)0x03;
-
-            Console.WriteLine(json);
-            EnqueueData(json);
+            
         }
 
         void Exit_Click(object sender, EventArgs e)
