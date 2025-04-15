@@ -106,7 +106,7 @@ namespace SerialSender
         private bool isSending = false;
         private readonly object serialLock = new object();
         private readonly object sendingLock = new object();
-        private static readonly int maxQueueSize = 10;
+        private static readonly int maxQueueSize = 20;
 
         private static List<string> songs = new List<string>();
 
