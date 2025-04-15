@@ -94,11 +94,11 @@ namespace SerialSender
         private System.Threading.Timer sendDataTimer;
         private System.Threading.Timer tideTimer;
 
-        private bool isDataCheckRunning = false;
-        private bool isWeatherRunning = false;
-        private bool isReadSerialRunning = false;
-        private bool isSendDataRunning = false;
-        private bool isTideRunning = false;
+        private int isDataCheckRunning = 0;
+        private int isWeatherRunning = 0;
+        private int isReadSerialRunning = 0;
+        private int isSendDataRunning = 0;
+        private int isTideRunning = 0;
 
 
 
@@ -201,11 +201,6 @@ namespace SerialSender
             if (sendQueue.Count >= maxQueueSize)
             {
                 Console.WriteLine("Queue is full. Discarding item.");
-                foreach (var item in sendQueue)
-                {
-                    Console.WriteLine(item);
-                }
-
                 return;
             }
 
@@ -215,17 +210,12 @@ namespace SerialSender
         public void sendData(object state)
         {
 
-            if (isSendDataRunning) return;
-            isSendDataRunning = true;
+            if (Interlocked.CompareExchange(ref isSendDataRunning, 1, 0) != 0) return;
 
             try
             {
                 if (sendQueue.TryDequeue(out string data))
                 {
-                    while (SelectedSerialPort.BytesToWrite > 0)
-                    {
-                        Thread.Sleep(10);
-                    }
                     lock (serialLock)
                     {
                         Console.WriteLine("Sending");
@@ -237,9 +227,9 @@ namespace SerialSender
             {
                 Console.WriteLine("Exception in sendData");
             }
-            finally 
+            finally
             {
-                isSendDataRunning = false;
+                Interlocked.Exchange(ref isSendDataRunning, 0);
             }
         }
 
@@ -265,8 +255,7 @@ namespace SerialSender
         public void readSerial(object state)
         {
 
-            if (isReadSerialRunning) return;
-            isReadSerialRunning = true;
+            if (Interlocked.CompareExchange(ref isReadSerialRunning, 1, 0) != 0) return;
 
             try
             {
@@ -406,7 +395,7 @@ namespace SerialSender
             }
             finally
             {
-                isReadSerialRunning = false;
+                Interlocked.Exchange(ref isReadSerialRunning, 0);
             }
         }
 
@@ -440,8 +429,8 @@ namespace SerialSender
 
         public async void weatherapp(object state)
         {
-            if (isWeatherRunning) return;
-            isWeatherRunning = true;
+            if (Interlocked.CompareExchange(ref isWeatherRunning, 1, 0) != 0) return;
+
 
             Console.WriteLine("Weather App function entered");
 
@@ -475,7 +464,7 @@ namespace SerialSender
                         DateTime sunriseTime = DateTime.Parse(myweather.daily.sunrise[currentDay]);
 
                         bool isDay = (currentTime >= sunriseTime) && (currentTime < sunsetTime);
-                        int currentDelta = deltaHours * (i-1); // how many hours past current forecast
+                        int currentDelta = deltaHours * (i - 1); // how many hours past current forecast
 
                         currentForecast = new ForeCast
                         {
@@ -518,18 +507,18 @@ namespace SerialSender
             catch (Exception)
             {
                 Console.WriteLine("Exception in weather");
-            } 
+            }
             finally
             {
-                isWeatherRunning = false;
+                Interlocked.Exchange(ref isWeatherRunning, 0);
             }
         }
         /////////////////////////////////////////////////////////
         public async void tideData(object state)
         {
 
-            if (isTideRunning) return;
-            isTideRunning = true;
+            if (Interlocked.CompareExchange(ref isTideRunning, 1, 0) != 0) return;
+
 
             Console.WriteLine("ACCESSING tide information ...");
             TideForecast tideForecast = new TideForecast();
@@ -619,14 +608,14 @@ namespace SerialSender
             }
             finally
             {
-                isTideRunning = false;
+                Interlocked.Exchange(ref isTideRunning, 0);
             }
         }
         /////////////////////////////////////////////////////////
         public void dataCheck(object state)
         {
-            if (isDataCheckRunning) return;
-            isDataCheckRunning = true;
+            if (Interlocked.CompareExchange(ref isDataCheckRunning, 1, 0) != 0) return;
+
 
             try
             {
@@ -748,17 +737,17 @@ namespace SerialSender
                 Console.WriteLine(json);
                 EnqueueData(json);
             }
-            catch 
+            catch
             {
                 Console.WriteLine("Excpetion in dataCheck");
             }
-            finally 
+            finally
             {
-                isDataCheckRunning = false;
+                Interlocked.Exchange(ref isDataCheckRunning, 0);
             }
 
 
-            
+
         }
 
         void Exit_Click(object sender, EventArgs e)
