@@ -14,6 +14,8 @@ using System.Net.Http;
 using System.Linq.Expressions;
 using System.CodeDom;
 using System.Reflection.Emit;
+using System.Threading.Tasks;
+using static System.Windows.Forms.AxHost;
 
 
 
@@ -93,6 +95,8 @@ namespace SerialSender
         private System.Threading.Timer readSerialTimer;
         private System.Threading.Timer sendDataTimer;
         private System.Threading.Timer tideTimer;
+        private System.Threading.Timer restartTimersTimer;
+
 
         private int isDataCheckRunning = 0;
         private int isWeatherRunning = 0;
@@ -233,171 +237,371 @@ namespace SerialSender
             }
         }
 
+        
 
         void Selected_Serial(object sender, EventArgs e, string selected_port)
         {
             if (SelectedSerialPort?.IsOpen == true)
                 SelectedSerialPort.Close();
-
+            
             SelectedSerialPort = new SerialPort(selected_port, BAUD_RATE);
             SelectedSerialPort.Open();
 
+            StartTimers();
+            //tideTimer = new System.Threading.Timer(tideData, null, 5000, 6 * 60 * 60 * 1000);
+        }
+
+        public void DisposeTimers()
+        {
+            // Safely dispose each timer if it exists
+            dataCheckTimer?.Dispose();
+            weatherTimer?.Dispose();
+            readSerialTimer?.Dispose();
+            sendDataTimer?.Dispose();
+            restartTimersTimer?.Dispose();
+            //tideTimer?.Dispose();
+
+            // Set to null to avoid using disposed objects
+            dataCheckTimer = null;
+            weatherTimer = null;
+            readSerialTimer = null;
+            sendDataTimer = null;
+            restartTimersTimer = null;
+            //tideTimer = null;
+        }
+
+        public void StartTimers()
+        {
+            // Dispose existing timers if they exist
+            DisposeTimers();
+
+            // Create and start new timers
             dataCheckTimer = new System.Threading.Timer(dataCheck, null, 1000, 2500);
-            weatherTimer = new System.Threading.Timer(weatherapp, null, 5000, 15 * 60 * 1000);
+            weatherTimer = new System.Threading.Timer(weatherapp, null, 5000, 15*60*1000);
             readSerialTimer = new System.Threading.Timer(readSerial, null, 1000, 1000);
             sendDataTimer = new System.Threading.Timer(sendData, null, 1000, 1000);
             //tideTimer = new System.Threading.Timer(tideData, null, 5000, 6 * 60 * 60 * 1000);
+
+            restartTimersTimer = new System.Threading.Timer(debugTimer, null, 5000, 5000);
         }
+
+
+        private void debugTimer(object state)
+        {
+            
+            ThreadPool.GetAvailableThreads(out int workerThreads, out int ioThreads);
+            Console.WriteLine($"Threads: {workerThreads} worker, {ioThreads} I/O");
+        }
+
 
 
         /////////////////////////////////////////////////////////
 
+        private SerialDataReceivedEventHandler _dataReceivedHandler; // Store the handler
+
         public void readSerial(object state)
         {
-
-            if (Interlocked.CompareExchange(ref isReadSerialRunning, 1, 0) != 0) return;
+            if (Interlocked.CompareExchange(ref isReadSerialRunning, 1, 0) != 0)
+                return;
 
             try
             {
-                SelectedSerialPort.DataReceived += (sender, e) =>
+                // Remove old handler (if any)
+                if (_dataReceivedHandler != null)
+                    SelectedSerialPort.DataReceived -= _dataReceivedHandler;
+
+                // Add new handler
+                _dataReceivedHandler = (sender, e) =>
                 {
-                    string data = SelectedSerialPort.ReadLine();
-                    data = data.TrimEnd('\r');
+                    string data = SelectedSerialPort.ReadLine().TrimEnd('\r');
                     Console.WriteLine("Received: " + data);
-
-                    if (data == "REFRESHWEATHER")
-                    {
-                        Console.WriteLine("Refreshing Weather info");
-                        lock (deltaHoursLock)
-                        {
-                            weatherapp(null);
-                        }
-                    }
-                    else if (data == "LOCKPC")
-                    {
-                        Console.WriteLine("Lock PC");
-                        Process.Start("rundll32.exe", "user32.dll,LockWorkStation");
-                    }
-                    else if (data == "REFRESHMUSIC")
-                    {
-                        SendSongString(WinAmp.musicFolderPath);
-                    }
-                    else if (data.StartsWith("PLAYMUSIC"))
-                    {
-                        String num = data.Substring(9, data.Length - 9);
-                        int index = int.Parse(num);
-                        String songDir;
-                        try
-                        {
-                            songDir = songs[index];
-                            Process.Start(WinAmp.directoryPath + "\\winamp.exe", "\"" + songDir + "\"");
-                        }
-                        catch (Exception)
-                        {
-                            Console.WriteLine("Refresh music player nextion");
-                        }
-
-                    }
-                    else if (data == "PAUSEMUSIC")
-                    {
-                        Process.Start(WinAmp.directoryPath + "\\winamp.exe", "/pause");
-                    }
-                    else if (data == "INCREASEMUSIC")
-                    {
-                        WinAmp.SendMessage(WinAmp.hwnd, WinAmp.WM_COMMAND, (IntPtr)WinAmp.INCREASE_VOLUME, IntPtr.Zero);
-
-                    }
-                    else if (data == "DECREASEMUSIC")
-                    {
-                        WinAmp.SendMessage(WinAmp.hwnd, WinAmp.WM_COMMAND, (IntPtr)WinAmp.DECREASE_VOLUME, IntPtr.Zero);
-                    }
-                    else if (data == "REFRESHTIDE")
-                    {
-                        Console.WriteLine("Refreshing Tide info");
-                        tideData(null);
-                    }
-                    else if (data.StartsWith("SCHEDULE"))
-                    {
-                        if (data.Substring(8).StartsWith("CLEAR"))
-                        {
-                            data = data.Substring(5);
-                            string start = data.Substring(8, 4);
-                            string end = data.Substring(12, 4);
-
-                            int swStartIndex = 16;
-                            int channelStartIndex = data.IndexOf("CHANNEL", swStartIndex) + "CHANNEL".Length;
-                            string SW = data.Substring(swStartIndex, channelStartIndex - swStartIndex - "CHANNEL".Length);
-                            string channel = data.Substring(channelStartIndex);
-
-                            if (SW == "MOTIONSENSOR" || SW == "TEMPSENSOR")
-                            {
-                                channel = "";
-                            }
-                            Console.WriteLine("Clearing: " + SW + channel + start + end);
-                            Scheduler.CancelTask(SW + channel + start + end);
-                            Scheduler.CancelTask(SW + channel + start + end + "END");
-                        }
-                        else
-                        {
-                            string start = data.Substring(8, 4);
-                            string end = data.Substring(12, 4);
-
-                            int swStartIndex = 16;
-                            int channelStartIndex = data.IndexOf("CHANNEL", swStartIndex) + "CHANNEL".Length;
-                            string SW = data.Substring(swStartIndex, channelStartIndex - swStartIndex - "CHANNEL".Length);
-                            string channel = data.Substring(channelStartIndex);
-
-                            if (SW == "MOTIONSENSOR" || SW == "TEMPSENSOR")
-                            {
-                                channel = "";
-                            }
-
-                            Console.WriteLine($"Start: {start}");
-                            Console.WriteLine($"End: {end}");
-                            Console.WriteLine($"Switch: {SW}");
-                            Console.WriteLine($"Channel: {channel}");
-
-                            Scheduler.ScheduleSwitch(SW, channel, start, end);
-
-                            ////For testing
-                            //start = DateTime.Now.AddMinutes(1).ToString("HHmm");
-                            //end = DateTime.Now.AddMinutes(2).ToString("HHmm");
-                            //Scheduler.ScheduleSwitch(SW, channel, start, end);
-                        }
-                    }
-                    else if (data.StartsWith("LOCATION"))
-                    {
-                        String location = data.Substring(8);
-                        int latStart = location.IndexOf("LAT") + 3;
-                        int latEnd = location.IndexOf("LONG");
-                        latitude = double.Parse(location.Substring(latStart, latEnd - latStart));
-
-                        int longStart = latEnd + 4;
-                        longitude = double.Parse(location.Substring(longStart));
-
-                        Console.WriteLine($"Latitude: {latitude}, Longitude: {longitude}");
-                    }
-                    else if (data.StartsWith("WEATHERDELTA"))
-                    {
-                        int deltaHoursLocal = int.Parse(data.Substring(12));
-
-                        lock (deltaHoursLock)
-                        {
-                            deltaHours = deltaHoursLocal;
-                            Console.WriteLine(deltaHours);
-                        }
-                    }
+                    ProcessSerialData(data); // Move logic to a separate method
                 };
+
+                SelectedSerialPort.DataReceived += _dataReceivedHandler;
             }
-            catch
+            catch (Exception ex)
             {
-                Console.WriteLine("Exception in readSerial");
+                Console.WriteLine($"Exception in readSerial: {ex.Message}");
             }
             finally
             {
                 Interlocked.Exchange(ref isReadSerialRunning, 0);
             }
         }
+
+        private void ProcessSerialData(string data)
+        {
+            if (data == "REFRESHWEATHER")
+            {
+                Console.WriteLine("Refreshing Weather info");
+                lock (deltaHoursLock)
+                {
+                    weatherapp(null);
+                }
+            }
+            else if (data == "LOCKPC")
+            {
+                Console.WriteLine("Lock PC");
+                Process.Start("rundll32.exe", "user32.dll,LockWorkStation");
+            }
+            else if (data == "REFRESHMUSIC")
+            {
+                SendSongString(WinAmp.musicFolderPath);
+            }
+            else if (data.StartsWith("PLAYMUSIC"))
+            {
+                String num = data.Substring(9, data.Length - 9);
+                int index = int.Parse(num);
+                String songDir;
+                try
+                {
+                    songDir = songs[index];
+                    Process.Start(WinAmp.directoryPath + "\\winamp.exe", "\"" + songDir + "\"");
+                }
+                catch (Exception)
+                {
+                    Console.WriteLine("Refresh music player nextion");
+                }
+
+            }
+            else if (data == "PAUSEMUSIC")
+            {
+                Process.Start(WinAmp.directoryPath + "\\winamp.exe", "/pause");
+            }
+            else if (data == "INCREASEMUSIC")
+            {
+                WinAmp.SendMessage(WinAmp.hwnd, WinAmp.WM_COMMAND, (IntPtr)WinAmp.INCREASE_VOLUME, IntPtr.Zero);
+
+            }
+            else if (data == "DECREASEMUSIC")
+            {
+                WinAmp.SendMessage(WinAmp.hwnd, WinAmp.WM_COMMAND, (IntPtr)WinAmp.DECREASE_VOLUME, IntPtr.Zero);
+            }
+            else if (data == "REFRESHTIDE")
+            {
+                Console.WriteLine("Refreshing Tide info");
+                tideData(null);
+            }
+            else if (data.StartsWith("SCHEDULE"))
+            {
+                if (data.Substring(8).StartsWith("CLEAR"))
+                {
+                    data = data.Substring(5);
+                    string start = data.Substring(8, 4);
+                    string end = data.Substring(12, 4);
+
+                    int swStartIndex = 16;
+                    int channelStartIndex = data.IndexOf("CHANNEL", swStartIndex) + "CHANNEL".Length;
+                    string SW = data.Substring(swStartIndex, channelStartIndex - swStartIndex - "CHANNEL".Length);
+                    string channel = data.Substring(channelStartIndex);
+
+                    if (SW == "MOTIONSENSOR" || SW == "TEMPSENSOR")
+                    {
+                        channel = "";
+                    }
+                    Console.WriteLine("Clearing: " + SW + channel + start + end);
+                    Scheduler.CancelTask(SW + channel + start + end);
+                    Scheduler.CancelTask(SW + channel + start + end + "END");
+                }
+                else
+                {
+                    string start = data.Substring(8, 4);
+                    string end = data.Substring(12, 4);
+
+                    int swStartIndex = 16;
+                    int channelStartIndex = data.IndexOf("CHANNEL", swStartIndex) + "CHANNEL".Length;
+                    string SW = data.Substring(swStartIndex, channelStartIndex - swStartIndex - "CHANNEL".Length);
+                    string channel = data.Substring(channelStartIndex);
+
+                    if (SW == "MOTIONSENSOR" || SW == "TEMPSENSOR")
+                    {
+                        channel = "";
+                    }
+
+                    Console.WriteLine($"Start: {start}");
+                    Console.WriteLine($"End: {end}");
+                    Console.WriteLine($"Switch: {SW}");
+                    Console.WriteLine($"Channel: {channel}");
+
+                    Scheduler.ScheduleSwitch(SW, channel, start, end);
+
+                    ////For testing
+                    //start = DateTime.Now.AddMinutes(1).ToString("HHmm");
+                    //end = DateTime.Now.AddMinutes(2).ToString("HHmm");
+                    //Scheduler.ScheduleSwitch(SW, channel, start, end);
+                }
+            }
+            else if (data.StartsWith("LOCATION"))
+            {
+                String location = data.Substring(8);
+                int latStart = location.IndexOf("LAT") + 3;
+                int latEnd = location.IndexOf("LONG");
+                latitude = double.Parse(location.Substring(latStart, latEnd - latStart));
+
+                int longStart = latEnd + 4;
+                longitude = double.Parse(location.Substring(longStart));
+
+                Console.WriteLine($"Latitude: {latitude}, Longitude: {longitude}");
+            }
+            else if (data.StartsWith("WEATHERDELTA"))
+            {
+                int deltaHoursLocal = int.Parse(data.Substring(12));
+
+                lock (deltaHoursLock)
+                {
+                    deltaHours = deltaHoursLocal;
+                    Console.WriteLine(deltaHours);
+                }
+            }
+        }
+
+        //public void readSerial(object state)
+        //{
+
+        //    if (Interlocked.CompareExchange(ref isReadSerialRunning, 1, 0) != 0) return;
+
+        //    try
+        //    {
+        //        SelectedSerialPort.DataReceived += (sender, e) =>
+        //        {
+        //            string data = SelectedSerialPort.ReadLine();
+        //            data = data.TrimEnd('\r');
+        //            Console.WriteLine("Received: " + data);
+
+        //            if (data == "REFRESHWEATHER")
+        //            {
+        //                Console.WriteLine("Refreshing Weather info");
+        //                lock (deltaHoursLock)
+        //                {
+        //                    weatherapp(null);
+        //                }
+        //            }
+        //            else if (data == "LOCKPC")
+        //            {
+        //                Console.WriteLine("Lock PC");
+        //                Process.Start("rundll32.exe", "user32.dll,LockWorkStation");
+        //            }
+        //            else if (data == "REFRESHMUSIC")
+        //            {
+        //                SendSongString(WinAmp.musicFolderPath);
+        //            }
+        //            else if (data.StartsWith("PLAYMUSIC"))
+        //            {
+        //                String num = data.Substring(9, data.Length - 9);
+        //                int index = int.Parse(num);
+        //                String songDir;
+        //                try
+        //                {
+        //                    songDir = songs[index];
+        //                    Process.Start(WinAmp.directoryPath + "\\winamp.exe", "\"" + songDir + "\"");
+        //                }
+        //                catch (Exception)
+        //                {
+        //                    Console.WriteLine("Refresh music player nextion");
+        //                }
+
+        //            }
+        //            else if (data == "PAUSEMUSIC")
+        //            {
+        //                Process.Start(WinAmp.directoryPath + "\\winamp.exe", "/pause");
+        //            }
+        //            else if (data == "INCREASEMUSIC")
+        //            {
+        //                WinAmp.SendMessage(WinAmp.hwnd, WinAmp.WM_COMMAND, (IntPtr)WinAmp.INCREASE_VOLUME, IntPtr.Zero);
+
+        //            }
+        //            else if (data == "DECREASEMUSIC")
+        //            {
+        //                WinAmp.SendMessage(WinAmp.hwnd, WinAmp.WM_COMMAND, (IntPtr)WinAmp.DECREASE_VOLUME, IntPtr.Zero);
+        //            }
+        //            else if (data == "REFRESHTIDE")
+        //            {
+        //                Console.WriteLine("Refreshing Tide info");
+        //                tideData(null);
+        //            }
+        //            else if (data.StartsWith("SCHEDULE"))
+        //            {
+        //                if (data.Substring(8).StartsWith("CLEAR"))
+        //                {
+        //                    data = data.Substring(5);
+        //                    string start = data.Substring(8, 4);
+        //                    string end = data.Substring(12, 4);
+
+        //                    int swStartIndex = 16;
+        //                    int channelStartIndex = data.IndexOf("CHANNEL", swStartIndex) + "CHANNEL".Length;
+        //                    string SW = data.Substring(swStartIndex, channelStartIndex - swStartIndex - "CHANNEL".Length);
+        //                    string channel = data.Substring(channelStartIndex);
+
+        //                    if (SW == "MOTIONSENSOR" || SW == "TEMPSENSOR")
+        //                    {
+        //                        channel = "";
+        //                    }
+        //                    Console.WriteLine("Clearing: " + SW + channel + start + end);
+        //                    Scheduler.CancelTask(SW + channel + start + end);
+        //                    Scheduler.CancelTask(SW + channel + start + end + "END");
+        //                }
+        //                else
+        //                {
+        //                    string start = data.Substring(8, 4);
+        //                    string end = data.Substring(12, 4);
+
+        //                    int swStartIndex = 16;
+        //                    int channelStartIndex = data.IndexOf("CHANNEL", swStartIndex) + "CHANNEL".Length;
+        //                    string SW = data.Substring(swStartIndex, channelStartIndex - swStartIndex - "CHANNEL".Length);
+        //                    string channel = data.Substring(channelStartIndex);
+
+        //                    if (SW == "MOTIONSENSOR" || SW == "TEMPSENSOR")
+        //                    {
+        //                        channel = "";
+        //                    }
+
+        //                    Console.WriteLine($"Start: {start}");
+        //                    Console.WriteLine($"End: {end}");
+        //                    Console.WriteLine($"Switch: {SW}");
+        //                    Console.WriteLine($"Channel: {channel}");
+
+        //                    Scheduler.ScheduleSwitch(SW, channel, start, end);
+
+        //                    ////For testing
+        //                    //start = DateTime.Now.AddMinutes(1).ToString("HHmm");
+        //                    //end = DateTime.Now.AddMinutes(2).ToString("HHmm");
+        //                    //Scheduler.ScheduleSwitch(SW, channel, start, end);
+        //                }
+        //            }
+        //            else if (data.StartsWith("LOCATION"))
+        //            {
+        //                String location = data.Substring(8);
+        //                int latStart = location.IndexOf("LAT") + 3;
+        //                int latEnd = location.IndexOf("LONG");
+        //                latitude = double.Parse(location.Substring(latStart, latEnd - latStart));
+
+        //                int longStart = latEnd + 4;
+        //                longitude = double.Parse(location.Substring(longStart));
+
+        //                Console.WriteLine($"Latitude: {latitude}, Longitude: {longitude}");
+        //            }
+        //            else if (data.StartsWith("WEATHERDELTA"))
+        //            {
+        //                int deltaHoursLocal = int.Parse(data.Substring(12));
+
+        //                lock (deltaHoursLock)
+        //                {
+        //                    deltaHours = deltaHoursLocal;
+        //                    Console.WriteLine(deltaHours);
+        //                }
+        //            }
+        //        };
+        //    }
+        //    catch
+        //    {
+        //        Console.WriteLine("Exception in readSerial");
+        //    }
+        //    finally
+        //    {
+        //        Interlocked.Exchange(ref isReadSerialRunning, 0);
+        //    }
+        //}
 
         /////////////////////////////////////////////////////////
 
@@ -616,7 +820,6 @@ namespace SerialSender
         {
             if (Interlocked.CompareExchange(ref isDataCheckRunning, 1, 0) != 0) return;
 
-
             try
             {
                 float GpuTemp = -1.0f;
@@ -631,13 +834,11 @@ namespace SerialSender
 
                 foreach (LibreHardwareMonitor.Hardware.IHardware hw in thisComputer.Hardware)
                 {
-                    Console.ReadLine();
                     hw.Update();
 
                     foreach (LibreHardwareMonitor.Hardware.ISensor s in hw.Sensors)
                     {
                         //Console.WriteLine("NAME: " + s.Name + ", TYPE: " + s.SensorType + ", VALUE: " + s.Value);
-                        Console.ReadLine();
 
                         // CPU  
                         if (s.SensorType == LibreHardwareMonitor.Hardware.SensorType.Temperature)
