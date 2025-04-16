@@ -456,153 +456,6 @@ namespace SerialSender
             }
         }
 
-        //public void readSerial(object state)
-        //{
-
-        //    if (Interlocked.CompareExchange(ref isReadSerialRunning, 1, 0) != 0) return;
-
-        //    try
-        //    {
-        //        SelectedSerialPort.DataReceived += (sender, e) =>
-        //        {
-        //            string data = SelectedSerialPort.ReadLine();
-        //            data = data.TrimEnd('\r');
-        //            Console.WriteLine("Received: " + data);
-
-        //            if (data == "REFRESHWEATHER")
-        //            {
-        //                Console.WriteLine("Refreshing Weather info");
-        //                lock (deltaHoursLock)
-        //                {
-        //                    weatherapp(null);
-        //                }
-        //            }
-        //            else if (data == "LOCKPC")
-        //            {
-        //                Console.WriteLine("Lock PC");
-        //                Process.Start("rundll32.exe", "user32.dll,LockWorkStation");
-        //            }
-        //            else if (data == "REFRESHMUSIC")
-        //            {
-        //                SendSongString(WinAmp.musicFolderPath);
-        //            }
-        //            else if (data.StartsWith("PLAYMUSIC"))
-        //            {
-        //                String num = data.Substring(9, data.Length - 9);
-        //                int index = int.Parse(num);
-        //                String songDir;
-        //                try
-        //                {
-        //                    songDir = songs[index];
-        //                    Process.Start(WinAmp.directoryPath + "\\winamp.exe", "\"" + songDir + "\"");
-        //                }
-        //                catch (Exception)
-        //                {
-        //                    Console.WriteLine("Refresh music player nextion");
-        //                }
-
-        //            }
-        //            else if (data == "PAUSEMUSIC")
-        //            {
-        //                Process.Start(WinAmp.directoryPath + "\\winamp.exe", "/pause");
-        //            }
-        //            else if (data == "INCREASEMUSIC")
-        //            {
-        //                WinAmp.SendMessage(WinAmp.hwnd, WinAmp.WM_COMMAND, (IntPtr)WinAmp.INCREASE_VOLUME, IntPtr.Zero);
-
-        //            }
-        //            else if (data == "DECREASEMUSIC")
-        //            {
-        //                WinAmp.SendMessage(WinAmp.hwnd, WinAmp.WM_COMMAND, (IntPtr)WinAmp.DECREASE_VOLUME, IntPtr.Zero);
-        //            }
-        //            else if (data == "REFRESHTIDE")
-        //            {
-        //                Console.WriteLine("Refreshing Tide info");
-        //                tideData(null);
-        //            }
-        //            else if (data.StartsWith("SCHEDULE"))
-        //            {
-        //                if (data.Substring(8).StartsWith("CLEAR"))
-        //                {
-        //                    data = data.Substring(5);
-        //                    string start = data.Substring(8, 4);
-        //                    string end = data.Substring(12, 4);
-
-        //                    int swStartIndex = 16;
-        //                    int channelStartIndex = data.IndexOf("CHANNEL", swStartIndex) + "CHANNEL".Length;
-        //                    string SW = data.Substring(swStartIndex, channelStartIndex - swStartIndex - "CHANNEL".Length);
-        //                    string channel = data.Substring(channelStartIndex);
-
-        //                    if (SW == "MOTIONSENSOR" || SW == "TEMPSENSOR")
-        //                    {
-        //                        channel = "";
-        //                    }
-        //                    Console.WriteLine("Clearing: " + SW + channel + start + end);
-        //                    Scheduler.CancelTask(SW + channel + start + end);
-        //                    Scheduler.CancelTask(SW + channel + start + end + "END");
-        //                }
-        //                else
-        //                {
-        //                    string start = data.Substring(8, 4);
-        //                    string end = data.Substring(12, 4);
-
-        //                    int swStartIndex = 16;
-        //                    int channelStartIndex = data.IndexOf("CHANNEL", swStartIndex) + "CHANNEL".Length;
-        //                    string SW = data.Substring(swStartIndex, channelStartIndex - swStartIndex - "CHANNEL".Length);
-        //                    string channel = data.Substring(channelStartIndex);
-
-        //                    if (SW == "MOTIONSENSOR" || SW == "TEMPSENSOR")
-        //                    {
-        //                        channel = "";
-        //                    }
-
-        //                    Console.WriteLine($"Start: {start}");
-        //                    Console.WriteLine($"End: {end}");
-        //                    Console.WriteLine($"Switch: {SW}");
-        //                    Console.WriteLine($"Channel: {channel}");
-
-        //                    Scheduler.ScheduleSwitch(SW, channel, start, end);
-
-        //                    ////For testing
-        //                    //start = DateTime.Now.AddMinutes(1).ToString("HHmm");
-        //                    //end = DateTime.Now.AddMinutes(2).ToString("HHmm");
-        //                    //Scheduler.ScheduleSwitch(SW, channel, start, end);
-        //                }
-        //            }
-        //            else if (data.StartsWith("LOCATION"))
-        //            {
-        //                String location = data.Substring(8);
-        //                int latStart = location.IndexOf("LAT") + 3;
-        //                int latEnd = location.IndexOf("LONG");
-        //                latitude = double.Parse(location.Substring(latStart, latEnd - latStart));
-
-        //                int longStart = latEnd + 4;
-        //                longitude = double.Parse(location.Substring(longStart));
-
-        //                Console.WriteLine($"Latitude: {latitude}, Longitude: {longitude}");
-        //            }
-        //            else if (data.StartsWith("WEATHERDELTA"))
-        //            {
-        //                int deltaHoursLocal = int.Parse(data.Substring(12));
-
-        //                lock (deltaHoursLock)
-        //                {
-        //                    deltaHours = deltaHoursLocal;
-        //                    Console.WriteLine(deltaHours);
-        //                }
-        //            }
-        //        };
-        //    }
-        //    catch
-        //    {
-        //        Console.WriteLine("Exception in readSerial");
-        //    }
-        //    finally
-        //    {
-        //        Interlocked.Exchange(ref isReadSerialRunning, 0);
-        //    }
-        //}
-
         /////////////////////////////////////////////////////////
 
         public static void SendSongString(string directoryPath)
@@ -823,6 +676,7 @@ namespace SerialSender
             try
             {
                 float GpuTemp = -1.0f;
+                float gpuPowerLoad = -1.0f;
                 float[] coreNoLoad = new float[20];
                 float[] coreNoTemp = new float[20];
                 float[] coreNoClock = new float[20];
@@ -881,13 +735,29 @@ namespace SerialSender
                             }
                         }
 
-                        if (s.SensorType == LibreHardwareMonitor.Hardware.SensorType.Power)
+                        //Old GPU power
+                        //if (s.SensorType == LibreHardwareMonitor.Hardware.SensorType.Power)
+                        //{
+                        //    if (s.Value != null)
+                        //    {
+                        //        if (s.Name.StartsWith("GPU Power"))
+                        //        {
+                        //            gpuPower = (float)Convert.ToDouble(s.Value);
+
+                        //        }
+                        //    }
+                        //}
+
+                        if (s.SensorType == LibreHardwareMonitor.Hardware.SensorType.Load)
                         {
+                            //Console.WriteLine("GPU POWER NAME: " + s.Name + ", TYPE: " + s.SensorType + ", VALUE: " + s.Value); // enabled debug 16 april
                             if (s.Value != null)
                             {
-                                if (s.Name.StartsWith("GPU Power"))
+                                if (s.Name.StartsWith("GPU Board Power"))
                                 {
-                                    gpuPower = (float)Convert.ToDouble(s.Value);
+                                    //Console.WriteLine("GPU POWER NAME: " + s.Name + ", TYPE: " + s.SensorType + ", VALUE: " + s.Value); // enabled debug 16 april
+                                    gpuPowerLoad = (float)Convert.ToDouble(s.Value);
+                                    gpuPower = gpuPowerLoad * 350 / 100 + 20; // gpu TDP = 350W, 20W fudge factor
 
                                 }
                             }
