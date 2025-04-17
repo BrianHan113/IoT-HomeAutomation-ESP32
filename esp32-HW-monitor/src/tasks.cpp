@@ -608,14 +608,14 @@ void executeCommands(void *params)
                 Serial.println("Current Temp: " + currentTemp);
                 queueNextionCommand("main.tempSensorText.txt=\"" + currentTemp + "\"");
             }
-            else if (commandString.startsWith("NEXTION"))
+        }
+        else if (commandString.startsWith("NEXTION"))
+        {
+            String withoutCommand = commandString.substring(7);
+            if (withoutCommand.startsWith("BRIGHTNESSNUMS"))
             {
-                String withoutCommand = commandString.substring(7);
-                if (withoutCommand.startsWith("BRIGHTNESSNUMS"))
-                {
-                    uint32_t numData = nextionNumConvert(14, withoutCommand.length() - 4, withoutCommand);
-                    queueNextionCommand("dim=" + String(numData));
-                }
+                uint32_t numData = nextionNumConvert(14, withoutCommand.length() - 4, withoutCommand);
+                queueNextionCommand("dim=" + String(numData));
             }
         }
 
