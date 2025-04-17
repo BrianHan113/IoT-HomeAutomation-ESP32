@@ -78,7 +78,7 @@ void receiveHardwareData(void *params)
             else if (receivedData.startsWith("MUSICSTRING")) // Framed string of all songs in the selected music folder
             {
                 splicedData = receivedData.substring(11);
-                Serial.println(splicedData);
+                // Serial.println(splicedData);
                 splicedData.replace("BREAK", "\\r");
                 // Cant queue music string as it may be too long to store
                 // Hence, this may not work sometimes, but it's a rare case, and users can easily just refresh again
@@ -227,7 +227,7 @@ void receiveNextionSerial(void *params)
                 }
                 else
                 {
-                    Serial.println("From receieveNextionSerial: " + String(buffer));
+                    // Serial.println("From receieveNextionSerial: " + String(buffer));
                 }
 
                 // Reset both buffers for next command
@@ -266,7 +266,7 @@ void sendNextionSerial(void *pvParameters)
             return;
         }
 
-        // Serial.println("Sending to Nextion: " + String(command));
+        Serial.println("Sending to Nextion: " + String(command));
         nextion.print(String(command));
         nextion.write(0xFF);
         nextion.write(0xFF);
@@ -300,7 +300,7 @@ void executeCommands(void *params)
         }
         else if (commandString == "LOCKPC")
         {
-            Serial.println("Lock PC");
+            // Serial.println("Lock PC");
             Serial.println("LOCKPC"); // Redirect command to c# app
         }
         else if (commandString.startsWith("SCANESPS"))
@@ -472,7 +472,7 @@ void executeCommands(void *params)
             {
                 uint32_t numData = nextionNumConvert(14, withoutCommand.length() - 4, withoutCommand);
                 String dataToSendString = "BRIGHTNESS" + String(numData);
-                Serial.println(dataToSendString);
+                // Serial.println(dataToSendString);
                 sendCommandToDevice(dataToSendString, statusLedDevice);
             }
         }
@@ -480,28 +480,28 @@ void executeCommands(void *params)
         {
             Serial.print("Play Music: ");
             int songIndex = nextionNumConvert(13, commandString.length() - 4, commandString);
-            Serial.println((String)songIndex);
+            // Serial.println((String)songIndex);
             Serial.print("PLAYMUSIC");
             Serial.println(songIndex);
         }
         else if (commandString == "REFRESHMUSIC")
         {
-            Serial.println("Refreshing music list");
+            // Serial.println("Refreshing music list");
             Serial.println("REFRESHMUSIC");
         }
         else if (commandString == "PAUSEMUSIC")
         {
-            Serial.println("Pause Music");
+            // Serial.println("Pause Music");
             Serial.println("PAUSEMUSIC");
         }
         else if (commandString == "INCREASEMUSIC")
         {
-            Serial.println("Increase volume");
+            // Serial.println("Increase volume");
             Serial.println("INCREASEMUSIC");
         }
         else if (commandString == "DECREASEMUSIC")
         {
-            Serial.println("Decrease volume");
+            // Serial.println("Decrease volume");
             Serial.println("DECREASEMUSIC");
         }
         else if (commandString.startsWith("LOCATION"))
@@ -521,13 +521,13 @@ void executeCommands(void *params)
         }
         else if (commandString == "REFRESHCAM1")
         {
-            Serial.println("Refresh cam 1");
+            // Serial.println("Refresh cam 1");
             Serial.println(cam1ServerUrl);
             uploadCamCaptureToNextion(cam1ServerUrl, "cam1");
         }
         else if (commandString == "REFRESHCAM2")
         {
-            Serial.println("Refresh cam 2");
+            // Serial.println("Refresh cam 2");
             Serial.println(cam2ServerUrl);
             uploadCamCaptureToNextion(cam2ServerUrl, "cam2");
         }
@@ -611,11 +611,14 @@ void executeCommands(void *params)
         }
         else if (commandString.startsWith("NEXTION"))
         {
+            Serial.println("Entered brightness handler");
             String withoutCommand = commandString.substring(7);
+            Serial.println(withoutCommand);
             if (withoutCommand.startsWith("BRIGHTNESSNUMS"))
             {
                 uint32_t numData = nextionNumConvert(14, withoutCommand.length() - 4, withoutCommand);
                 queueNextionCommand("dim=" + String(numData));
+                Serial.println("From handler: dim=" + String(numData));
             }
         }
 
