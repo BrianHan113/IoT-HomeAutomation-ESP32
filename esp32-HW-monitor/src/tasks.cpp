@@ -266,7 +266,7 @@ void sendNextionSerial(void *pvParameters)
             return;
         }
 
-        Serial.println("Sending to Nextion: " + String(command));
+        // Serial.println("Sending to Nextion: " + String(command));
         nextion.print(String(command));
         nextion.write(0xFF);
         nextion.write(0xFF);
@@ -611,14 +611,14 @@ void executeCommands(void *params)
         }
         else if (commandString.startsWith("NEXTION"))
         {
-            Serial.println("Entered brightness handler");
+            // Serial.println("Entered brightness handler");
             String withoutCommand = commandString.substring(7);
-            Serial.println(withoutCommand);
+            // Serial.println(withoutCommand);
             if (withoutCommand.startsWith("BRIGHTNESSNUMS"))
             {
                 uint32_t numData = nextionNumConvert(14, withoutCommand.length() - 4, withoutCommand);
                 queueNextionCommand("dim=" + String(numData));
-                Serial.println("From handler: dim=" + String(numData));
+                // Serial.println("From handler: dim=" + String(numData));
             }
         }
 
